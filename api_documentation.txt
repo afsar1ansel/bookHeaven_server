@@ -1,0 +1,211 @@
+1. ADMIN MODULE (Prefix: /api/admin) {
+
+    Endpoint:    POST /api/admin/login
+    Description: Admin login to receive a JWT token.
+    Auth:        Public
+    Input:
+    {
+      "Email": "admin@example.com",
+      "Password": "password123"
+    }
+    Response:
+    {
+      "token": "JWT_TOKEN_HERE",
+      "Username": "admin_name",
+      "Email": "admin@example.com",
+      "role": "admin"
+    }
+
+    ................................................................................
+
+    Endpoint:    GET /api/admin/
+    Description: List all administrators.
+    Auth:        Required (Admin Token)
+    Response:
+    [
+      {
+        "AdminID": 1,
+        "Username": "admin_name",
+        "Email": "admin@example.com"
+      }
+    ]
+
+    ................................................................................
+
+    Endpoint:    POST /api/admin/
+    Description: Create a new administrator.
+    Auth:        Required (Admin Token)
+    Input:
+    {
+      "Username": "new_admin",
+      "Email": "new@example.com",
+      "Password": "secure_password"
+    }
+    Response:
+    {
+      "message": "Admin created",
+      "AdminID": 2
+    }
+
+    ................................................................................
+
+    Endpoint:    PUT /api/admin/{admin_id}
+    Description: Update an existing administrator's details.
+    Auth:        Required (Admin Token)
+    Input:
+    {
+      "Username": "updated_name",
+      "Email": "updated@example.com"
+    }
+    Response:
+    {
+      "message": "Admin updated successfully"
+    }
+
+    ................................................................................
+
+    Endpoint:    DELETE /api/admin/{admin_id}
+    Description: Delete an administrator.
+    Auth:        Required (Admin Token)
+    Response:
+    {
+      "message": "Admin deleted successfully"
+    }
+
+}
+
+2. USER MODULE (Prefix: /api/user) {
+
+    Endpoint:    POST /api/user/register
+    Description: Register a new customer user.
+    Auth:        Public
+    Input:
+    {
+      "Email": "user@example.com",
+      "Password": "password123",
+      "Name": "John Doe",
+      "Address": "123 Main St",
+      "Phone": "555-0199"
+    }
+    Response:
+    {
+      "message": "User registered successfully"
+    }
+
+    ................................................................................
+
+    Endpoint:    POST /api/user/login
+    Description: User login to receive a JWT token.
+    Auth:        Public
+    Input:
+    {
+      "Email": "user@example.com",
+      "Password": "password123"
+    }
+    Response:
+    {
+      "token": "JWT_TOKEN_HERE",
+      "Name": "John Doe",
+      "Email": "user@example.com",
+      "role": "user"
+    }
+
+    ................................................................................
+
+    Endpoint:    GET /api/user/profile
+    Description: Get current logged-in user profile.
+    Auth:        Required (User/Admin Token)
+    Response:
+    {
+      "UserID": 1,
+      "Email": "user@example.com",
+      "Name": "John Doe",
+      "Address": "123 Main St",
+      "Phone": "555-0199"
+    }
+
+}
+
+3. BOOKS MODULE (Prefix: /api/books) {
+
+    Endpoint:    GET /api/books/
+    Description: List all books in the store.
+    Auth:        Required (Any Token)
+    Response:
+    [
+      {
+        "BookID": 1,
+        "ISBN": "978-0747532743",
+        "Title": "Harry Potter and the Philosopher's Stone",
+        "Price": "19.99",
+        "StockQuantity": 50,
+        "Format": "Physical",
+        "CoverImageURL": "https://picsum.photos/400/600"
+      }
+    ]
+
+    ................................................................................
+
+    Endpoint:    GET /api/books/{book_id}
+    Description: Get detailed information about a specific book.
+    Auth:        Required (Any Token)
+    Response:
+    {
+      "BookID": 1,
+      "ISBN": "978-0747532743",
+      "Title": "Harry Potter and the Philosopher's Stone",
+      "Description": "The first novel in the Harry Potter series.",
+      "Price": "19.99",
+      "StockQuantity": 50,
+      "Format": "Physical",
+      "PublicationDate": "1997-06-26",
+      "CoverImageURL": "https://picsum.photos/400/600"
+    }
+
+    ................................................................................
+
+    Endpoint:    POST /api/books/
+    Description: Add a new book to the inventory.
+    Auth:        Required (Admin Token)
+    Input:
+    {
+      "ISBN": "978-1234567890",
+      "Title": "New Adventure",
+      "Description": "A thrilling new tale.",
+      "Price": 15.99,
+      "StockQuantity": 100,
+      "Format": "Physical",
+      "PublicationDate": "2024-01-01"
+    }
+    Response:
+    {
+      "message": "Book created successfully",
+      "BookID": 5
+    }
+
+    ................................................................................
+
+    Endpoint:    PUT /api/books/{book_id}
+    Description: Update a book's information.
+    Auth:        Required (Admin Token)
+    Input:
+    {
+      "Title": "Updated Title",
+      "Price": 12.99
+    }
+    Response:
+    {
+      "message": "Book updated successfully"
+    }
+
+    ................................................................................
+
+    Endpoint:    DELETE /api/books/{book_id}
+    Description: Remove a book from the inventory.
+    Auth:        Required (Admin Token)
+    Response:
+    {
+      "message": "Book deleted successfully"
+    }
+
+}
