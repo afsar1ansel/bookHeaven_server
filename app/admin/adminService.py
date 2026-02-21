@@ -1,6 +1,29 @@
 from ..database import db
 from .models import Admin
 from passlib.hash import pbkdf2_sha256
+import jwt
+import datetime
+import os
+
+from flask import current_app
+
+def generate_admin_token(admin_id):
+    payload = {
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+        'iat': datetime.datetime.utcnow(),
+        'sub': str(admin_id),
+        'role': 'admin'
+    }
+    return jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+
+def authenticate_admin(email, password):
+    admin = Admin.query.filter_by(Email=email).first()
+    if admin and pbkdf2_sha256.verify(password, admin.Password):
+        return generate_admin_token(admin.AdminID), admin
+    return None, None
+
+def get_admin_by_id(admin_id):
+    return Admin.query.get(admin_id)
 
 def get_all_admins():
     return Admin.query.all()
