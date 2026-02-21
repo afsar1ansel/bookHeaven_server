@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from . import userService
+from ..auth import token_required
 import jwt
 import os
 
@@ -16,22 +17,21 @@ def register():
 @user_bp.route('/login', methods=['POST'])
 def login():
     data = request.json
-    token = userService.authenticate_user(data.get('Email'), data.get('Password'))
+    token, user = userService.authenticate_user(data.get('Email'), data.get('Password'))
     if not token:
         return jsonify({"error": "Invalid credentials"}), 401
-    return jsonify({"token": token})
+    return jsonify({
+        "token": token,
+        "Name": user.Name,
+        "Email": user.Email,
+        "role": "user"
+    })
 
 @user_bp.route('/profile', methods=['GET'])
+@token_required
 def profile():
-    auth_header = request.headers.get('Authorization')
-    if not auth_header:
-        return jsonify({"error": "Token missing"}), 401
-    
     try:
-        # Bearer <token>
-        token = auth_header.split(" ")[1]
-        payload = jwt.decode(token, os.getenv('SECRET_KEY'), algorithms=['HS256'])
-        user = userService.get_user_by_id(payload['sub'])
+        user = userService.get_user_by_id(request.user_payload['sub'])
         if not user:
             return jsonify({"error": "User not found"}), 404
         return jsonify({
@@ -42,4 +42,4 @@ def profile():
             "Phone": user.Phone
         })
     except Exception as e:
-        return jsonify({"error": "Invalid token"}), 401
+        return jsonify({"error": f"Profile error: {str(e)}"}), 401

@@ -31,8 +31,8 @@ def register_user(data):
 def authenticate_user(email, password):
     user = User.query.filter_by(Email=email).first()
     if user and pbkdf2_sha256.verify(password, user.Password):
-        return generate_token(user.UserID)
-    return None
+        return generate_token(user.UserID), user
+    return None, None
 
 def get_user_by_id(user_id):
     return User.query.get(user_id)

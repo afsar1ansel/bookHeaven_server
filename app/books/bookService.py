@@ -5,8 +5,11 @@ from datetime import datetime
 def get_all_books():
     return Book.query.all()
 
+def get_book_by_id(book_id):
+    return Book.query.get(book_id)
+
 def get_book_by_isbn(isbn):
-    return Book.query.get(isbn)
+    return Book.query.filter_by(ISBN=isbn).first()
 
 def create_book(data):
     # Basic validation could be added here
@@ -24,11 +27,12 @@ def create_book(data):
     db.session.commit()
     return new_book
 
-def update_book(isbn, data):
-    book = Book.query.get(isbn)
+def update_book(book_id, data):
+    book = Book.query.get(book_id)
     if not book:
         return None
     
+    book.ISBN = data.get('ISBN', book.ISBN)
     book.Title = data.get('Title', book.Title)
     book.Description = data.get('Description', book.Description)
     book.Price = data.get('Price', book.Price)
@@ -41,8 +45,8 @@ def update_book(isbn, data):
     db.session.commit()
     return book
 
-def delete_book(isbn):
-    book = Book.query.get(isbn)
+def delete_book(book_id):
+    book = Book.query.get(book_id)
     if not book:
         return False
     

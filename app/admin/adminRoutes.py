@@ -1,36 +1,10 @@
 from flask import Blueprint, jsonify, request, current_app
 from . import adminService
-from functools import wraps
+from ..auth import admin_required
 import jwt
 import os
 
 admin_bp = Blueprint('admin', __name__)
-
-def admin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"error": "Admin token missing"}), 401
-        try:
-            # Check for Bearer token
-            if not auth_header.startswith("Bearer "):
-                return jsonify({"error": "Invalid token format. Use Bearer <token>"}), 401
-            
-            token = auth_header.split(" ")[1]
-            payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-            
-            if payload.get('role') != 'admin':
-                return jsonify({"error": "Admin access required"}), 403
-            
-            return f(*args, **kwargs)
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired"}), 401
-        except jwt.InvalidTokenError as e:
-            return jsonify({"error": f"Invalid token: {str(e)}"}), 401
-        except Exception as e:
-            return jsonify({"error": f"Authorization error: {str(e)}"}), 401
-    return decorated
 
 @admin_bp.route('/login', methods=['POST'])
 def admin_login():
