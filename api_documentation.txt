@@ -124,6 +124,23 @@
       "Phone": "555-0199"
     }
 
+    ................................................................................
+
+    Endpoint:    PUT /api/user/profile
+    Description: Update current logged-in user profile (including password).
+    Auth:        Required (User/Admin Token)
+    Input:
+    {
+      "Name": "John Updated",
+      "Address": "456 Updated St",
+      "Phone": "555-9999",
+      "Password": "newpassword123"
+    }
+    Response:
+    {
+      "message": "Profile updated successfully"
+    }
+
 }
 
 3. BOOKS MODULE (Prefix: /api/books) {

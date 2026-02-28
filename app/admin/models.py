@@ -6,3 +6,5 @@ class Admin(db.Model):
     Username = db.Column(db.String(50), unique=True, nullable=False)
     Email = db.Column(db.String(255), unique=True, nullable=False)
     Password = db.Column(db.String(255), nullable=False)
+    Address = db.Column(db.Text)
+    Phone = db.Column(db.String(20))

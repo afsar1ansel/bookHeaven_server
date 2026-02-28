@@ -42,8 +42,10 @@ def get_all_users():
     return User.query.all()
 
 def update_user(user_id, data):
+    print(f"DEBUG: userService.update_user called for UserID: {user_id}")
     user = User.query.get(user_id)
     if not user:
+        print(f"DEBUG: UserID {user_id} NOT found in database.")
         return None
     
     user.Name = data.get('Name', user.Name)

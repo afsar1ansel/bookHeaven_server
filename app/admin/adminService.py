@@ -35,7 +35,9 @@ def create_admin(data):
     new_admin = Admin(
         Username=data.get('Username'),
         Email=data.get('Email'),
-        Password=pbkdf2_sha256.hash(data.get('Password'))
+        Password=pbkdf2_sha256.hash(data.get('Password')),
+        Address=data.get('Address'),
+        Phone=data.get('Phone')
     )
     db.session.add(new_admin)
     db.session.commit()
@@ -48,6 +50,9 @@ def update_admin(admin_id, data):
     
     admin.Username = data.get('Username', admin.Username)
     admin.Email = data.get('Email', admin.Email)
+    admin.Address = data.get('Address', admin.Address)
+    admin.Phone = data.get('Phone', admin.Phone)
+    
     if data.get('Password'):
         admin.Password = pbkdf2_sha256.hash(data.get('Password'))
         

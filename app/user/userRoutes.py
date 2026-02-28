@@ -31,15 +31,51 @@ def login():
 @token_required
 def profile():
     try:
-        user = userService.get_user_by_id(request.user_payload['sub'])
+        user_payload = request.user_payload
+        role = user_payload.get('role', 'user')
+        user_id = user_payload.get('sub')
+        
+        if role == 'admin':
+            from ..admin import adminService
+            user = adminService.get_admin_by_id(user_id)
+        else:
+            user = userService.get_user_by_id(user_id)
+            
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": f"{role.capitalize()} not found"}), 404
+            
         return jsonify({
-            "UserID": user.UserID,
+            "UserID": getattr(user, 'UserID', getattr(user, 'AdminID', None)),
             "Email": user.Email,
-            "Name": user.Name,
+            "Name": getattr(user, 'Name', getattr(user, 'Username', None)),
             "Address": user.Address,
-            "Phone": user.Phone
+            "Phone": user.Phone,
+            "role": role
         })
     except Exception as e:
         return jsonify({"error": f"Profile error: {str(e)}"}), 401
+
+@user_bp.route('/profile', methods=['PUT'])
+@token_required
+def update_profile():
+    try:
+        data = request.json
+        user_payload = request.user_payload
+        role = user_payload.get('role', 'user')
+        user_id = user_payload.get('sub')
+        
+        if not user_id:
+            return jsonify({"error": "Invalid token payload: missing sub"}), 400
+            
+        if role == 'admin':
+            from ..admin import adminService
+            user = adminService.update_admin(user_id, data)
+        else:
+            user = userService.update_user(user_id, data)
+            
+        if not user:
+            return jsonify({"error": f"{role.capitalize()} not found"}), 404
+            
+        return jsonify({"message": "Profile updated successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
