@@ -137,10 +137,12 @@
         "BookID": 1,
         "ISBN": "978-0747532743",
         "Title": "Harry Potter and the Philosopher's Stone",
+        "Description": "The first novel in the Harry Potter series.",
         "Price": "19.99",
         "StockQuantity": 50,
         "Format": "Physical",
-        "CoverImageURL": "https://picsum.photos/400/600"
+        "CoverImageURL": "https://picsum.photos/400/600",
+        "Authors": ["J.K. Rowling"]
       }
     ]
 
@@ -159,7 +161,8 @@
       "StockQuantity": 50,
       "Format": "Physical",
       "PublicationDate": "1997-06-26",
-      "CoverImageURL": "https://picsum.photos/400/600"
+      "CoverImageURL": "https://picsum.photos/400/600",
+      "Authors": ["J.K. Rowling"]
     }
 
     ................................................................................

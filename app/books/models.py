@@ -22,6 +22,9 @@ class Book(db.Model):
     Format = db.Column(db.Enum('Physical', 'eBook'), nullable=False)
     PublicationDate = db.Column(db.Date)
     CoverImageURL = db.Column(db.String(255))
+    
+    # Relationships
+    authors = db.relationship('Author', secondary=book_author, backref='books')
 
 class Author(db.Model):
     __tablename__ = 'author'

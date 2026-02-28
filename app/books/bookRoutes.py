@@ -12,10 +12,12 @@ def list_books():
         "BookID": b.BookID,
         "ISBN": b.ISBN,
         "Title": b.Title,
+        "Description": b.Description,
         "Price": str(b.Price),
         "StockQuantity": b.StockQuantity,
         "Format": b.Format,
-        "CoverImageURL": "https://picsum.photos/400/600"
+        "CoverImageURL": "https://picsum.photos/400/600",
+        "Authors": [a.Name for a in b.authors]
     } for b in books])
 
 @books_bp.route('/<int:book_id>', methods=['GET'])
@@ -33,7 +35,8 @@ def get_book(book_id):
         "StockQuantity": book.StockQuantity,
         "Format": book.Format,
         "PublicationDate": str(book.PublicationDate) if book.PublicationDate else None,
-        "CoverImageURL": "https://picsum.photos/400/600"
+        "CoverImageURL": "https://picsum.photos/400/600",
+        "Authors": [a.Name for a in book.authors]
     })
 
 @books_bp.route('/', methods=['POST'])
