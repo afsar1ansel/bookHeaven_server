@@ -65,3 +65,12 @@ def remove_book(book_id):
     if not success:
         return jsonify({"error": "Book not found"}), 404
     return jsonify({"message": "Book deleted successfully"})
+
+@books_bp.route('/home', methods=['GET'])
+@token_required
+def get_home():
+    try:
+        data = bookService.get_home_data()
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400

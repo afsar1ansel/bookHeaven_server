@@ -165,6 +165,36 @@
 
     ................................................................................
 
+    Endpoint:    GET /api/books/home
+    Description: Get structured data for the Home Page (Hero, New Arrivals, Categories, Stats).
+    Auth:        Required (Any Token)
+    Response:
+    {
+      "hero": [ { "id": 1, "title": "...", "image": "...", "tagline": "...", "price": "..." } ],
+      "sections": [
+        {
+          "title": "New Arrivals",
+          "type": "slider",
+          "books": [ { "BookID": 1, "Title": "...", "CoverImageURL": "...", "Price": "...", "Authors": [...] } ]
+        },
+        {
+          "title": "Best Sellers",
+          "type": "grid",
+          "books": [ ... ]
+        }
+      ],
+      "categories": [ { "name": "Fiction", "image": "...", "bookCount": 25 } ],
+      "stats": {
+        "TotalBooks": 5000,
+        "HappyReaders": "10k+",
+        "Authors": 120,
+        "CountriesServed": 15
+      },
+      "bookOfTheWeek": { ...full book details... }
+    }
+
+    ................................................................................
+
     Endpoint:    GET /api/books/{book_id}
     Description: Get detailed information about a specific book.
     Auth:        Required (Any Token)
