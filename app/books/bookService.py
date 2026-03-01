@@ -100,7 +100,8 @@ def get_home_data():
             "title": b.Title,
             "image": "https://picsum.photos/400/600",
             "tagline": b.Description[:100] + "..." if b.Description else "A great read.",
-            "price": str(b.Price)
+            "price": str(b.Price),
+            "Rating": b.Rating
         } for b in featured],
         "sections": [
             {
@@ -111,6 +112,7 @@ def get_home_data():
                     "Title": b.Title,
                     "CoverImageURL": "https://picsum.photos/400/600",
                     "Price": str(b.Price),
+                    "Rating": b.Rating,
                     "Authors": [a.Name for a in b.authors]
                 } for b in new_arrivals]
             },
@@ -122,6 +124,7 @@ def get_home_data():
                     "Title": b.Title,
                     "CoverImageURL": "https://picsum.photos/400/600",
                     "Price": str(b.Price),
+                    "Rating": b.Rating,
                     "Authors": [a.Name for a in b.authors]
                 } for b in best_sellers]
             }
@@ -134,6 +137,7 @@ def get_home_data():
             "Description": botw.Description,
             "CoverImageURL": "https://picsum.photos/400/600",
             "Price": str(botw.Price),
+            "Rating": botw.Rating,
             "Authors": [a.Name for a in botw.authors]
         } if botw else None
     }

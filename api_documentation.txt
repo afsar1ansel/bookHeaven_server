@@ -158,6 +158,7 @@
         "Price": "19.99",
         "StockQuantity": 50,
         "Format": "Physical",
+        "Rating": 5,
         "CoverImageURL": "https://picsum.photos/400/600",
         "Authors": ["J.K. Rowling"]
       }
@@ -170,12 +171,12 @@
     Auth:        Required (Any Token)
     Response:
     {
-      "hero": [ { "id": 1, "title": "...", "image": "...", "tagline": "...", "price": "..." } ],
+      "hero": [ { "id": 1, "title": "...", "image": "...", "tagline": "...", "price": "...", "Rating": 5 } ],
       "sections": [
         {
           "title": "New Arrivals",
           "type": "slider",
-          "books": [ { "BookID": 1, "Title": "...", "CoverImageURL": "...", "Price": "...", "Authors": [...] } ]
+          "books": [ { "BookID": 1, "Title": "...", "CoverImageURL": "...", "Price": "...", "Rating": 4, "Authors": [...] } ]
         },
         {
           "title": "Best Sellers",
@@ -207,6 +208,7 @@
       "Price": "19.99",
       "StockQuantity": 50,
       "Format": "Physical",
+      "Rating": 5,
       "PublicationDate": "1997-06-26",
       "CoverImageURL": "https://picsum.photos/400/600",
       "Authors": ["J.K. Rowling"]

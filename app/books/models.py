@@ -22,6 +22,7 @@ class Book(db.Model):
     Format = db.Column(db.Enum('Physical', 'E-book', 'Audiobook'), nullable=False)
     PublicationDate = db.Column(db.Date)
     CoverImageURL = db.Column(db.String(255))
+    Rating = db.Column(db.Integer, default=0)
     
     # Relationships
     authors = db.relationship('Author', secondary=book_author, backref='books')

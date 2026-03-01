@@ -16,6 +16,7 @@ def list_books():
         "Price": str(b.Price),
         "StockQuantity": b.StockQuantity,
         "Format": b.Format,
+        "Rating": b.Rating,
         "CoverImageURL": "https://picsum.photos/400/600",
         "Authors": [a.Name for a in b.authors]
     } for b in books])
@@ -34,6 +35,7 @@ def get_book(book_id):
         "Price": str(book.Price),
         "StockQuantity": book.StockQuantity,
         "Format": book.Format,
+        "Rating": book.Rating,
         "PublicationDate": str(book.PublicationDate) if book.PublicationDate else None,
         "CoverImageURL": "https://picsum.photos/400/600",
         "Authors": [a.Name for a in book.authors]
