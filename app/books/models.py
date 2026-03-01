@@ -19,7 +19,7 @@ class Book(db.Model):
     Description = db.Column(db.Text)
     Price = db.Column(db.Numeric(10, 2), nullable=False)
     StockQuantity = db.Column(db.Integer, default=0)
-    Format = db.Column(db.Enum('Physical', 'eBook'), nullable=False)
+    Format = db.Column(db.Enum('Physical', 'E-book', 'Audiobook'), nullable=False)
     PublicationDate = db.Column(db.Date)
     CoverImageURL = db.Column(db.String(255))
     
