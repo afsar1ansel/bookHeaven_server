@@ -261,3 +261,148 @@
     }
 
 }
+
+4. ORDERS MODULE (Prefix: /api/orders) {
+
+    Endpoint:    GET /api/orders/cart
+    Description: Retrieves the user's current shopping cart.
+    Auth:        Required (User Token)
+    Response:
+    {
+      "cart_id": 1,
+      "items": [
+        {
+          "book_id": 1,
+          "title": "Harry Potter...",
+          "price": "19.99",
+          "quantity": 1,
+          "subtotal": "19.99",
+          "format": "Physical",
+          "cover_image": "..."
+        }
+      ],
+      "total_amount": "19.99",
+      "item_count": 1
+    }
+
+    ................................................................................
+
+    Endpoint:    POST /api/orders/cart/add
+    Description: Adds a book to the user's cart.
+    Auth:        Required (User Token)
+    Input:
+    {
+      "book_id": 1,
+      "quantity": 1
+    }
+    Response:
+    {
+      "message": "Added Harry Potter to cart"
+    }
+
+    ................................................................................
+
+    Endpoint:    PUT /api/orders/cart/update
+    Description: Updates the quantity of an item in the cart. Set quantity to 0 to remove.
+    Auth:        Required (User Token)
+    Input:
+    {
+      "book_id": 1,
+      "quantity": 5
+    }
+    Response:
+    {
+      "message": "Cart updated"
+    }
+
+    ................................................................................
+
+    Endpoint:    DELETE /api/orders/cart/remove/{book_id}
+    Description: Removes a specific book from the cart.
+    Auth:        Required (User Token)
+    Response:
+    {
+      "message": "Item removed from cart"
+    }
+
+    ................................................................................
+
+    Endpoint:    DELETE /api/orders/cart/clear
+    Description: Empties the user's cart.
+    Auth:        Required (User Token)
+    Response:
+    {
+      "message": "Cart cleared"
+    }
+
+    ................................................................................
+
+    Endpoint:    POST /api/orders/checkout
+    Description: Initiates checkout process using items from the database cart.
+    Auth:        Required (User Token)
+    Input:
+    {
+      "shipping_address": "123 Main St...",
+      "payment": {"method": "Credit Card", "card_number": "1234567890123456"}
+    }
+    Response:
+    {
+      "message": "Order placed successfully!",
+      "order_id": 1,
+      "transaction_id": "txn_abcd1234",
+      "total_amount": "19.99",
+      "estimated_delivery": "2024-05-01"
+    }
+
+    ................................................................................
+
+    Endpoint:    GET /api/orders/history
+    Description: Fetches order history for a logged in user with digital links.
+    Auth:        Required (User Token)
+    Response:
+    [
+      {
+        "order_id": 1,
+        "date": "2024-04-26 12:00:00",
+        "status": "Pending",
+        "total_amount": "19.99",
+        "payment_status": "Success",
+        "items": [
+          {
+            "book_id": 1,
+            "title": "Harry Potter...",
+            "format": "Physical",
+            "quantity": 1,
+            "unit_price": "19.99"
+          }
+        ]
+      }
+    ]
+
+    ................................................................................
+
+    Endpoint:    GET /api/orders/admin/all
+    Description: Grabs all orders in system for admin dashboard.
+    Auth:        Required (Admin Token)
+    Response:
+    [
+      {
+        "order_id": 1,
+        "user_id": 1,
+        "date": "2024-04-26 12:00:00",
+        "status": "Pending",
+        "total_amount": "19.99"
+      }
+    ]
+
+    ................................................................................
+
+    Endpoint:    POST /api/orders/admin/{order_id}/dispatch
+    Description: Moves order status from Pending to Shipped.
+    Auth:        Required (Admin Token)
+    Response:
+    {
+      "message": "Order 1 status updated to Shipped"
+    }
+
+}

@@ -34,3 +34,20 @@ class DigitalDownload(db.Model):
     DownloadLink = db.Column(db.String(255))
     ExpiryDate = db.Column(db.DateTime)
     AccessCount = db.Column(db.Integer, default=0)
+
+class Cart(db.Model):
+    __tablename__ = 'cart'
+    CartID = db.Column(db.Integer, primary_key=True)
+    UserID = db.Column(db.Integer, db.ForeignKey('user.UserID', ondelete='CASCADE'), unique=True)
+    CreatedAt = db.Column(db.DateTime, server_default=db.func.current_timestamp())
+    UpdatedAt = db.Column(db.DateTime, server_default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+    
+    # Relationship
+    items = db.relationship('CartItem', backref='cart', cascade='all, delete-orphan')
+
+class CartItem(db.Model):
+    __tablename__ = 'cartitem'
+    CartItemID = db.Column(db.Integer, primary_key=True)
+    CartID = db.Column(db.Integer, db.ForeignKey('cart.CartID', ondelete='CASCADE'))
+    BookID = db.Column(db.Integer, db.ForeignKey('book.BookID'))
+    Quantity = db.Column(db.Integer, default=1, nullable=False)
