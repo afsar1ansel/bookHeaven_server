@@ -1,0 +1,26 @@
+{
+    "name": "bookheaven/api",
+    "description": "BookHeaven PHP API Server",
+    "type": "project",
+    "require": {
+        "firebase/php-jwt": "^6.0",
+        "vlucas/phpdotenv": "^5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Afsar1ansel"
+        }
+    ],
+    "config": {
+        "audit": {
+            "ignore": [
+                "PKSA-y2cr-5h3j-g3ys"
+            ]
+        }
+    }
+}
