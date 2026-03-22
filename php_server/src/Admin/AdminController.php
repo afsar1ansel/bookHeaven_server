@@ -65,14 +65,23 @@ class AdminController extends BaseController {
         $this->json(["message" => "Admin updated successfully"]);
     }
 
-    public function delete(int $adminId): void {
+    public function delete(int $admin_id): void {
         Auth::requireAdmin();
-        $success = $this->adminService->deleteAdmin($adminId);
+        $success = $this->adminService->deleteAdmin($admin_id);
         
         if (!$success) {
             $this->error("Admin not found", 404);
         }
 
         $this->json(["message" => "Admin deleted successfully"]);
+    }
+
+    /**
+     * Module 3: Admin Dashboard & Analytics
+     */
+    public function dashboard(): void {
+        Auth::requireAdmin();
+        $stats = $this->adminService->getDashboardStats();
+        $this->json($stats);
     }
 }

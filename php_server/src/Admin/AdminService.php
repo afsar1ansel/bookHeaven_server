@@ -94,4 +94,31 @@ class AdminService {
         $stmt = $db->prepare("DELETE FROM admin WHERE AdminID = ?");
         return $stmt->execute([$adminId]);
     }
+
+    /**
+     * Module 3: Admin Dashboard & Analytics
+     */
+    public function getDashboardStats(): array {
+        $db = Database::get();
+
+        // 1. Total Revenue
+        $stmt = $db->query("SELECT SUM(Amount) as total FROM payment WHERE PaymentStatus = 'Success'");
+        $revenue = $stmt->fetch()['total'] ?? 0;
+
+        // 2. Active Users (Users with at least one order)
+        $stmt = $db->query("SELECT COUNT(DISTINCT UserID) as count FROM `order` WHERE OrderStatus != 'Cancelled'");
+        $activeUsers = $stmt->fetch()['count'] ?? 0;
+
+        // 3. Low Stock Alerts (Stock < 10)
+        $stmt = $db->query("SELECT BookID, Title, StockQuantity FROM book WHERE StockQuantity < 10");
+        $lowStockBooks = $stmt->fetchAll();
+
+        return [
+            "total_revenue" => (string) $revenue,
+            "active_users" => (int) $activeUsers,
+            "low_stock_count" => count($lowStockBooks),
+            "low_stock_alerts" => $lowStockBooks,
+            "timestamp" => date('Y-m-d H:i:s')
+        ];
+    }
 }

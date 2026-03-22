@@ -32,6 +32,22 @@
 
     ................................................................................
 
+    Endpoint:    GET /api/admin/dashboard
+    Description: Get high-level store analytics (Revenue, Active Users, Low Stock).
+    Auth:        Required (Admin Token)
+    Response:
+    {
+      "total_revenue": "1250.50",
+      "active_users": 42,
+      "low_stock_count": 3,
+      "low_stock_alerts": [
+        { "BookID": 5, "Title": "Rare Book", "StockQuantity": 2 }
+      ],
+      "timestamp": "2024-04-26 14:00:00"
+    }
+
+    ................................................................................
+
     Endpoint:    POST /api/admin/
     Description: Create a new administrator.
     Auth:        Required (Admin Token)
@@ -299,6 +315,11 @@
     {
       "message": "Added Harry Potter to cart"
     }
+    Error (Out of Stock):
+    400 Bad Request
+    {
+      "error": "Only 2 units of 'Harry Potter' are available in stock."
+    }
 
     ................................................................................
 
@@ -353,6 +374,7 @@
       "total_amount": "19.99",
       "estimated_delivery": "2024-05-01"
     }
+    Note: Inventory is automatically decremented upon successful checkout.
 
     ................................................................................
 

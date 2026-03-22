@@ -45,6 +45,16 @@ class OrderService {
 
     public function addToCart(int $userId, int $bookId, int $quantity): bool {
         $db = Database::get();
+        
+        // --- STOCK VALIDATION ---
+        $stmt = $db->prepare("SELECT StockQuantity, Title FROM book WHERE BookID = ?");
+        $stmt->execute([$bookId]);
+        $book = $stmt->fetch();
+        if (!$book) throw new Exception("Book not found");
+        if ($book['StockQuantity'] < $quantity) {
+            throw new Exception("Only {$book['StockQuantity']} units of '{$book['Title']}' are available in stock.");
+        }
+
         $this->ensureCartExists($userId);
         $cartId = $this->getCartId($userId);
 
@@ -55,6 +65,10 @@ class OrderService {
 
         if ($existing) {
             $newQuantity = $existing['Quantity'] + $quantity;
+            // Validate total quantity against stock
+            if ($book['StockQuantity'] < $newQuantity) {
+                throw new Exception("Cannot add more. Total in cart ({$newQuantity}) exceeds available stock ({$book['StockQuantity']}).");
+            }
             $stmt = $db->prepare("UPDATE cartitem SET Quantity = ? WHERE CartItemID = ?");
             return $stmt->execute([$newQuantity, $existing['CartItemID']]);
         } else {
@@ -70,6 +84,14 @@ class OrderService {
         if ($quantity <= 0) {
             $stmt = $db->prepare("DELETE FROM cartitem WHERE CartID = ? AND BookID = ?");
             return $stmt->execute([$cartId, $bookId]);
+        }
+
+        // --- STOCK VALIDATION ---
+        $stmt = $db->prepare("SELECT StockQuantity FROM book WHERE BookID = ?");
+        $stmt->execute([$bookId]);
+        $stock = $stmt->fetchColumn();
+        if ($stock < $quantity) {
+            throw new Exception("Requested quantity ($quantity) exceeds available stock ($stock).");
         }
 
         $stmt = $db->prepare("UPDATE cartitem SET Quantity = ? WHERE CartID = ? AND BookID = ?");
@@ -95,22 +117,37 @@ class OrderService {
 
         $db->beginTransaction();
         try {
-            // 1. Create Order
+            // 1. Final Stock Validation & Decrement
+            foreach ($cart['items'] as $item) {
+                $stmt = $db->prepare("SELECT StockQuantity FROM book WHERE BookID = ? FOR UPDATE");
+                $stmt->execute([$item['BookID']]);
+                $currentStock = $stmt->fetchColumn();
+
+                if ($currentStock < $item['Quantity']) {
+                    throw new Exception("Stock changed for '{$item['Title']}'. Only {$currentStock} available.");
+                }
+
+                // Decrement Stock
+                $stmt = $db->prepare("UPDATE book SET StockQuantity = StockQuantity - ? WHERE BookID = ?");
+                $stmt->execute([$item['Quantity'], $item['BookID']]);
+            }
+
+            // 2. Create Order
             $stmt = $db->prepare("INSERT INTO `order` (UserID, TotalAmount, ShippingAddress, OrderStatus) VALUES (?, ?, ?, 'Pending')");
             $stmt->execute([$userId, $cart['total_amount'], $shippingAddress]);
             $orderId = $db->lastInsertId();
 
-            // 2. Create Order Items
+            // 3. Create Order Items
             foreach ($cart['items'] as $item) {
                 $stmt = $db->prepare("INSERT INTO orderitem (OrderID, BookID, Quantity, UnitPrice) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$orderId, $item['BookID'], $item['Quantity'], $item['Price']]);
             }
 
-            // 3. Create Payment record
+            // 4. Create Payment record
             $stmt = $db->prepare("INSERT INTO payment (OrderID, PaymentMethod, TransactionID, PaymentStatus, Amount, PaymentDate) VALUES (?, ?, ?, 'Success', ?, NOW())");
             $stmt->execute([$orderId, $paymentInfo['method'] ?? 'COD', 'PHP_TXN_' . uniqid(), $cart['total_amount']]);
 
-            // 4. Clear Cart
+            // 5. Clear Cart
             $this->clearCart($userId);
 
             $db->commit();
