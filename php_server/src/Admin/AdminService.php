@@ -44,6 +44,14 @@ class AdminService {
         return $stmt->fetchAll();
     }
 
+    public function getAdminById(int $adminId): ?array {
+        $db = Database::get();
+        $stmt = $db->prepare("SELECT AdminID, Username, Email, Address, Phone FROM admin WHERE AdminID = ?");
+        $stmt->execute([$adminId]);
+        $admin = $stmt->fetch();
+        return $admin ?: null;
+    }
+
     public function createAdmin(array $data): array {
         $db = Database::get();
         

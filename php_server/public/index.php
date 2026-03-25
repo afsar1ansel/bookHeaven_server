@@ -36,6 +36,7 @@ $router->put('/api/user/profile', [UserController::class, 'updateProfile']);
 // --- ADMIN ROUTES ---
 $router->post('/api/admin/login', [AdminController::class, 'login']);
 $router->get('/api/admin/dashboard', [AdminController::class, 'dashboard']);
+$router->get('/api/admin/profile', [AdminController::class, 'getProfile']);
 $router->get('/api/admin/', [AdminController::class, 'list']);
 $router->post('/api/admin/', [AdminController::class, 'add']);
 $router->put('/api/admin/{admin_id}', [AdminController::class, 'update']);

@@ -38,6 +38,18 @@ class AdminController extends BaseController {
         $this->json($admins);
     }
 
+    public function getProfile(): void {
+        $payload = Auth::requireAdmin();
+        $adminId = (int)$payload['sub'];
+        $admin = $this->adminService->getAdminById($adminId);
+        
+        if (!$admin) {
+            $this->error("Admin details not found", 404);
+        }
+
+        $this->json($admin);
+    }
+
     public function add(): void {
         Auth::requireAdmin();
         $data = $this->getBodyData();
