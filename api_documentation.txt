@@ -1,3 +1,6 @@
+server : php -S localhost:5000 -t public
+
+
 1. ADMIN MODULE (Prefix: /api/admin) {
 
     Endpoint:    POST /api/admin/login
@@ -29,6 +32,22 @@
         "Email": "admin@example.com"
       }
     ]
+
+    ................................................................................
+
+    Endpoint:    GET /api/admin/profile
+    Description: Get current logged-in administrator profile.
+    Auth:        Required (Admin Token)
+    Response:
+    {
+      "AdminID": 1,
+      "Username": "admin_name",
+      "Email": "admin@example.com",
+      "Address": "Admin HQ",
+      "Phone": "555-0100"
+    }
+
+    ................................................................................
 
     ................................................................................
 
