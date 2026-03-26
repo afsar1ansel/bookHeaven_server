@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 0 DFD - Simple View</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #diagram-container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            padding: 40px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .mermaid {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>BookHeaven: Level 0 DFD (Context Diagram)</h1>
+    
+    <div id="diagram-container">
+        <div class="mermaid">
+            graph TD
+                Customer((Customer))
+                Admin((Administrator))
+                PaymentGateway((Payment Gateway))
+                System[("BookHeaven System")]
+
+                %% Interactions
+                Customer -- "Search/Browse Books" --> System
+                Customer -- "Register / Login Info" --> System
+                Customer -- "Cart Updates / Checkout" --> System
+                System -- "Book List / Details" --> Customer
+                System -- "Auth Status / Profile" --> Customer
+                System -- "Order Confirmation" --> Customer
+
+                Admin -- "Login Info" --> System
+                Admin -- "Add/Edit/Delete Books" --> System
+                Admin -- "Update Order Status" --> System
+                System -- "Sales Reports / Order List" --> Admin
+
+                System -- "Process Transaction" --> PaymentGateway
+                PaymentGateway -- "Payment Success/Failure" --> System
+        </div>
+    </div>
+
+    <div style="width: 100%; max-width: 1200px; margin-top: 30px;">
+        <h2>DFD Level 0 Details</h2>
+        
+        <h3>1. External Entities</h3>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; text-align: left; background: white;">
+            <tr><th>Entity</th><th>Description</th></tr>
+            <tr><td><strong>Customer</strong></td><td>The primary user who browses books, manages their cart, and places orders.</td></tr>
+            <tr><td><strong>Administrator</strong></td><td>Staff member who manages the book inventory and monitors sales performance.</td></tr>
+            <tr><td><strong>Payment Gateway</strong></td><td>External system that handles secure credit card / digital wallet transactions.</td></tr>
+        </table>
+
+        <h3>2. Core Process</h3>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; text-align: left; background: white;">
+            <tr><th>Process</th><th>Description</th></tr>
+            <tr><td><strong>Bookstore System</strong></td><td>The central application logic that coordinates between users, authentication, and order fulfillment.</td></tr>
+        </table>
+
+        <h3>3. Key Data Flows</h3>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; text-align: left; background: white;">
+            <tr><th>Flow Name</th><th>Source &rarr; Destination</th><th>Description</th></tr>
+            <tr><td><strong>Order Request</strong></td><td>Customer &rarr; System</td><td>Items and shipping details sent for checkout.</td></tr>
+            <tr><td><strong>Invoice</strong></td><td>System &rarr; Customer</td><td>Receipt and order confirmation provided after payment.</td></tr>
+            <tr><td><strong>Stock Update</strong></td><td>Admin &rarr; System</td><td>New inventory counts or book metadata changes.</td></tr>
+            <tr><td><strong>Sales Reports</strong></td><td>System &rarr; Admin</td><td>Aggregated transaction data for business monitoring.</td></tr>
+        </table>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false, /* Disabled to allow container to control size */
+                htmlLabels: true
+            }
+        });
+    </script>
+</body>
+</html>

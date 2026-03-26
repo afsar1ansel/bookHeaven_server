@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 2 DFD - Order Processing</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #fcfcfc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #diagram-container {
+            width: 100%;
+            max-width: 1400px;
+            background: white;
+            padding: 40px;
+            border: 1px solid #111;
+        }
+
+        .mermaid {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Level 2 DFD: Process 3.0 (Order Processing)</h1>
+    
+    <div id="diagram-container">
+        <div class="mermaid">
+            graph TB
+                %% Entities/Stores
+                User[User]
+                PG[Payment Gateway]
+                D2[(D2: Books DB)]
+                D3[(D3: Orders DB)]
+
+                %% Sub-Processes (Circles)
+                P3_1((3.1 Check Stock))
+                P3_2((3.2 Calc Total))
+                P3_3((3.3 Pay Process))
+                P3_4((3.4 Create Record))
+                P3_5((3.5 Update Stock))
+
+                %% Data Flows
+                User -- "Cart Checkout" --> P3_1
+                P3_1 -- "Qty Check" <--> D2
+                P3_1 -- "Available" --> P3_2
+                
+                P3_2 -- "Total Amt" --> P3_3
+                P3_3 -- "Payment Data" --> PG
+                PG -- "Authorized" --> P3_4
+                
+                P3_4 -- "Order Data" --> D3
+                P3_4 -- "Complete" --> P3_5
+                
+                P3_5 -- "Decrement" --> D2
+                P3_4 -- "Invoice & Success" --> User
+                
+                %% Styling for clarity
+                style User fill:#fff,stroke:#000,stroke-width:2px
+                style PG fill:#fff,stroke:#000,stroke-width:2px
+                
+                style P3_1 fill:#fff,stroke:#000,stroke-width:1px
+                style P3_2 fill:#fff,stroke:#000,stroke-width:1px
+                style P3_3 fill:#fff,stroke:#000,stroke-width:1px
+                style P3_4 fill:#fff,stroke:#000,stroke-width:1px
+                style P3_5 fill:#fff,stroke:#000,stroke-width:1px
+
+                style D2 fill:#fff,stroke:#000,stroke-width:1.5px
+                style D3 fill:#fff,stroke:#000,stroke-width:1.5px
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#ffffff',
+                lineColor: '#000000',
+                textColor: '#000000'
+            },
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true
+            }
+        });
+    </script>
+    <div style="width: 100%; max-width: 1200px; margin-top: 30px; border-top: 2px solid #222; padding-top: 20px;">
+        <h2>DFD Level 2 Details: Order Fulfillment (3.0)</h2>
+
+        <h3>1. Sub-Processes</h3>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; text-align: left; background: white; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background: #f4f4f4;"><th>ID</th><th>Process Name</th><th>Function</th></tr>
+            <tr><td><strong>3.1</strong></td><td>Check Stock</td><td>Validates that requested book quantities are available in D2 inventory.</td></tr>
+            <tr><td><strong>3.2</strong></td><td>Calculate Total</td><td>Sums up item prices and applies any taxes or shipping costs.</td></tr>
+            <tr><td><strong>3.3</strong></td><td>Pay Process</td><td>Initiates transaction with the Payment Gateway (PG) and awaits authorization.</td></tr>
+            <tr><td><strong>3.4</strong></td><td>Create Record</td><td>Saves the final order and generates the customer invoice in D3.</td></tr>
+            <tr><td><strong>3.5</strong></td><td>Update Stock</td><td>Finalizes the decrement of the book count in D2.</td></tr>
+        </table>
+
+        <h3>2. Involved Data Stores</h3>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; text-align: left; background: white; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background: #f4f4f4;"><th>Store</th><th>Usage</th></tr>
+            <tr><td><strong>D2 (Books)</strong></td><td>Used for inventory verification (read) and quantity deduction (write).</td></tr>
+            <tr><td><strong>D3 (Orders)</strong></td><td>Used to store the transaction snapshot and invoice generation.</td></tr>
+        </table>
+
+        <h3>3. Flow Breakdown</h3>
+        <ul style="line-height: 1.6;">
+            <li><strong>User &rarr; P3.1:</strong> Sends current cart content for validation.</li>
+            <li><strong>P3.3 &rarr; PG:</strong> Request for secure payment processing (Authorized/Denied).</li>
+            <li><strong>P3.4 &rarr; User:</strong> Returns a digital receipt (Invoice) on success.</li>
+        </ul>
+    </div>
+</body>
+</html>

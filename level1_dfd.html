@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 1 DFD - Bookstore System</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        #diagram-container {
+            width: 100%;
+            max-width: 1400px;
+            background: white;
+            padding: 40px;
+            border: 1px solid #000;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .mermaid {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Level 1 Data Flow Diagram (Bookstore System)</h1>
+    
+    <div id="diagram-container">
+        <div class="mermaid">
+            graph TB
+                %% External Entities
+                User[User]
+                Admin[Admin]
+
+                %% Processes (Circles/Rounded)
+                P1((1.0 Login/Auth))
+                P2((2.0 Browse & Search))
+                P3((3.0 Place Order))
+                P4((4.0 Stock Mgmt))
+                P5((5.0 Reporting))
+
+                %% Data Stores (Open-ended)
+                D1[(D1: User DB)]
+                D2[(D2: Book DB)]
+                D3[(D3: Order/Invoice DB)]
+
+                %% Data Flows - User
+                User -- "Credentials" --> P1
+                P1 -- "User Profile" --> User
+                
+                User -- "Search Query" --> P2
+                P2 -- "Book Details" --> User
+
+                User -- "Order Request" --> P3
+                P3 -- "Invoice/Receipt" --> User
+
+                %% Data Flows - Processes to Stores
+                P1 <--> D1
+                P2 -- "Fetch Books" --> D2
+                P3 -- "Stock Check" <--> D2
+                P3 -- "Save Order" --> D3
+
+                %% Data Flows - Admin
+                Admin -- "Update Stock" --> P4
+                P4 -- "Update Items" --> D2
+
+                Admin -- "Request Reports" --> P5
+                P5 -- "Fetch Sales" --> D3
+                P5 -- "Sales Reports" --> Admin
+
+                %% Styling for clarity
+                style User fill:#fff,stroke:#000,stroke-width:2px
+                style Admin fill:#fff,stroke:#000,stroke-width:2px
+                
+                style P1 fill:#fff,stroke:#000,stroke-width:1px
+                style P2 fill:#fff,stroke:#000,stroke-width:1px
+                style P3 fill:#fff,stroke:#000,stroke-width:1px
+                style P4 fill:#fff,stroke:#000,stroke-width:1px
+                style P5 fill:#fff,stroke:#000,stroke-width:1px
+
+                style D1 fill:#fff,stroke:#000,stroke-width:1.5px
+                style D2 fill:#fff,stroke:#000,stroke-width:1.5px
+                style D3 fill:#fff,stroke:#000,stroke-width:1.5px
+        </div>
+    </div>
+
+    <div style="width: 100%; max-width: 1200px; margin-top: 30px; border-top: 2px solid #333; padding-top: 20px;">
+        <h2>DFD Level 1 Details</h2>
+
+        <h3>1. Data Stores</h3>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; text-align: left; background: white; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background: #eee;"><th>Store ID</th><th>Name</th><th>Usage & Purpose</th></tr>
+            <tr><td><strong>D1</strong></td><td>User DB</td><td>Authentication credentials, user roles (customer/admin), and profile information.</td></tr>
+            <tr><td><strong>D2</strong></td><td>Book DB</td><td>Master catalog containing book titles, ISBNs, prices, and current stock_quantity.</td></tr>
+            <tr><td><strong>D3</strong></td><td>Order/Invoice DB</td><td>Immutable record of historical transactions, status (Pending/Shipped), and snapshots of items.</td></tr>
+        </table>
+
+        <h3>2. Processes</h3>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; text-align: left; background: white; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background: #eee;"><th>Process ID</th><th>Task</th><th>Functional Description</th></tr>
+            <tr><td><strong>1.0</strong></td><td>Login/Auth</td><td>Verifies user credentials against D1 and manages JWT session tokens.</td></tr>
+            <tr><td><strong>2.0</strong></td><td>Browse & Search</td><td>Provides read-only access to the book catalog in D2 based on user queries.</td></tr>
+            <tr><td><strong>3.0</strong></td><td>Place Order</td><td>Coordinates checkout: validates stock in D2, creates order in D3, and clears cart.</td></tr>
+            <tr><td><strong>4.0</strong></td><td>Stock Mgmt</td><td>Internal admin tool for replenishing or adjusting inventory levels in D2.</td></tr>
+            <tr><td><strong>5.0</strong></td><td>Reporting</td><td>Aggregator process that pulls data from D3 to generate sales performance metrics for Admins.</td></tr>
+        </table>
+
+        <h3>3. Significant Data Flows</h3>
+        <ul style="line-height: 1.6;">
+            <li><strong>User &rarr; P1.0:</strong> Login credentials (Email/Password).</li>
+            <li><strong>P3.0 &rarr; D2:</strong> Update stock_quantity (decrements inventory upon successful order).</li>
+            <li><strong>D3 &rarr; P5.0:</strong> Raw transaction data for business intelligence.</li>
+            <li><strong>P5.0 &rarr; Admin:</strong> Formatted sales reports and order summaries.</li>
+        </ul>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#ffffff',
+                lineColor: '#000000',
+                textColor: '#000000'
+            },
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'linear'
+            }
+        });
+    </script>
+</body>
+</html>

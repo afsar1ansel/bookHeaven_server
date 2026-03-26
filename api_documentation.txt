@@ -1,4 +1,5 @@
-server : c
+server : php -S localhost:8080 -t public
+
 
 
 1. ADMIN MODULE (Prefix: /api/admin) {

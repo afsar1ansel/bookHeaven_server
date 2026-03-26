@@ -3,221 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookHeaven | Official Database ER Diagram</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>ER Diagram - BookHeaven System</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
-        :root {
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --accent: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.2);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --border: #334155;
-        }
-
         body {
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 40px 20px;
-            background-color: var(--bg);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            background-color: #ffffff;
+            color: #000000;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        .container {
-            max-width: 1100px;
-            width: 100%;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
         h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin: 0;
-            letter-spacing: -0.025em;
-            background: linear-gradient(to right, #fff, var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
         }
 
-        p.subtitle {
-            color: var(--text-secondary);
-            margin-top: 10px;
-            font-size: 1.1rem;
+        #diagram-container {
+            width: 100%;
+            max-width: 1400px;
+            background: #ffffff;
+            padding: 40px;
+            border: 2px solid #000000;
+            margin-bottom: 40px;
         }
 
-        .diagram-wrapper {
+        .details-section {
+            width: 100%;
+            max-width: 1200px;
             background: #ffffff;
             padding: 30px;
-            border-radius: 16px;
-            margin: 20px 0;
-            display: flex;
-            justify-content: center;
-            min-height: 400px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #000;
         }
 
-        .rules-card {
-            margin-top: 40px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .rule-item {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-
-        .rule-item h3 {
-            margin-top: 0;
-            color: var(--accent);
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .rule-item p {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 0;
-        }
-
-        code {
-            font-family: 'JetBrains Mono', monospace;
-            background: #000;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.85em;
-        }
-
-        .footer {
-            margin-top: 30px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            text-align: center;
-        }
-
-        /* Mermaid Overrides for cleaner output */
-        .mermaid {
+        table {
             width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        .rule-badge {
+            display: inline-block;
+            border: 1px solid #000;
+            padding: 2px 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Database ER Diagram</h1>
-            <p class="subtitle">BookHeaven 4-Table Unified Model (College Standard)</p>
-        </header>
+    <h1>BookHeaven: ER Diagram (Monochrome)</h1>
+    
+    <div id="diagram-container">
+        <div class="mermaid">
+            erDiagram
+                User ||--|| Cart : "owns"
+                User ||--o{ Order : "places"
+                
+                Cart ||--|{ Cart_Item : "contains"
+                Book ||--o{ Cart_Item : "is added to"
+                
+                Order ||--|{ Order_Item : "includes"
+                Book ||--o{ Order_Item : "sold in"
 
-        <div class="diagram-wrapper">
-            <pre class="mermaid">
-                erDiagram
-                    USER ||--o| CART : "has (1:1)"
-                    USER ||--o{ ORDER : "places (1:N)"
-                    
-                    USER {
-                        int id PK "Primary Key (Underlined)"
-                        string email "Unique Identifier"
-                        string password "Secure Hash"
-                        string name "Full Name"
-                        string address "Shipping Address"
-                        string phone "Contact Number"
-                        string role "admin | user"
-                    }
+                User {
+                    int user_id PK
+                    string email
+                    string password
+                    string name
+                    string address
+                    string phone
+                    enum role
+                }
 
-                    BOOK {
-                        int id PK "Primary Key (Underlined)"
-                        string isbn "Global Standard ID"
-                        string title "Book Title"
-                        text description "Book Contents"
-                        decimal price "Unit Price"
-                        int stock_quantity "Inventory Level"
-                        string category "Subject Area"
-                        json authors "Attribute List"
-                    }
+                Book {
+                    int book_id PK
+                    string isbn
+                    string title
+                    text description
+                    decimal price
+                    int stock_quantity
+                    string category
+                }
 
-                    CART {
-                        int id PK "Primary Key (Underlined)"
-                        int user_id FK "References User.id"
-                        json items "Embedded Attribute Group"
-                    }
+                Cart {
+                    int cart_id PK
+                    int user_id FK
+                }
 
-                    ORDER {
-                        int id PK "Primary Key (Underlined)"
-                        int user_id FK "References User.id"
-                        decimal total_amount "Order Value"
-                        string status "Order State"
-                        string payment_method "Transaction via"
-                        json items "Frozen Snapshot of Books"
-                    }
-            </pre>
+                Cart_Item {
+                    int cart_item_id PK
+                    int cart_id FK
+                    int book_id FK
+                    int quantity
+                }
+
+                Order {
+                    int order_id PK
+                    int user_id FK
+                    decimal total_amount
+                    string status
+                    string payment_method
+                    timestamp order_date
+                }
+
+                Order_Item {
+                    int order_item_id PK
+                    int order_id FK
+                    int book_id FK
+                    decimal price_at_checkout
+                    int quantity
+                }
         </div>
+    </div>
 
-        <div class="rules-card">
-            <div class="rule-item">
-                <h3>🔹 Singular Names</h3>
-                <p>Following strict naming conventions: <code>USER</code>, <code>BOOK</code>, <code>CART</code>, <code>ORDER</code> (singular, not plural).</p>
-            </div>
-            <div class="rule-item">
-                <h3>🔹 Attributes</h3>
-                <p>Primary Keys (<code>PK</code>) are the unique identifiers. Modern listing style used inside entity boxes.</p>
-            </div>
-            <div class="rule-item">
-                <h3>🔹 Crow's Foot</h3>
-                <p><code>||--o{</code> notation showing 1 (mandatory) to Many (optional) relationships professionally.</p>
-            </div>
-            <div class="rule-item">
-                <h3>🔹 Implementation</h3>
-                <p>Foreign Keys (<code>FK</code>) are explicitly shown to demonstrate the 4-table link mechanism.</p>
-            </div>
-        </div>
+    <div class="details-section">
+        <h2>ER Diagram Details</h2>
 
-        <div class="footer">
-            &copy; 2026 BookHeaven Database Documentation &bull; Generated by Antigravity
-        </div>
+        <h3>1. Normalized Entities</h3>
+        <table>
+            <tr><th>Entity</th><th>Description</th></tr>
+            <tr><td><strong>User</strong></td><td>Stores authentication and profile data.</td></tr>
+            <tr><td><strong>Book</strong></td><td>The master catalog for available books.</td></tr>
+            <tr><td><strong>Cart_Item</strong></td><td>Junction Table (Cart & Book).</td></tr>
+            <tr><td><strong>Order_Item</strong></td><td>Junction Table (Order & Book).</td></tr>
+        </table>
+
+        <h3>2. Cardinality</h3>
+        <ul>
+            <li><strong>User -> Cart:</strong> 1:1 Mandatory Relation</li>
+            <li><strong>User -> Order:</strong> 1:N Optional Relation</li>
+            <li><strong>Cart -> Cart_Item:</strong> 1:N Mandatory Relation</li>
+            <li><strong>Order -> Order_Item:</strong> 1:N Mandatory Relation</li>
+        </ul>
+
+        <h3>3. Attributes & Keys</h3>
+        <p><span class="rule-badge">PK</span> Primary Key identifies a record uniquely.</p>
+        <p><span class="rule-badge">FK</span> Foreign Key links related records between tables.</p>
     </div>
 
     <script>
         mermaid.initialize({
             startOnLoad: true,
-            theme: 'default',
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#ffffff',
+                primaryTextColor: '#000000',
+                primaryBorderColor: '#000000',
+                lineColor: '#000000',
+                secondaryColor: '#ffffff',
+                tertiaryColor: '#ffffff',
+                fontFamily: 'Arial'
+            },
             er: {
-                useMaxWidth: true,
-                diagramPadding: 20
+                useMaxWidth: true
             }
         });
     </script>
