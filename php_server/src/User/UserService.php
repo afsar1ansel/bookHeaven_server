@@ -8,29 +8,31 @@ use Exception;
 class UserService {
     /**
      * Registers a new user.
-     * Replaces Flask's register_user().
+     * Now inserts into `users` table with role = 'user'.
      */
     public function registerUser(array $data): array {
         $db = Database::get();
-        
-        // Check if user exists
-        $stmt = $db->prepare("SELECT UserID FROM user WHERE Email = ?");
+
+        // Check if email already exists for a user (not admin)
+        $stmt = $db->prepare("SELECT id FROM users WHERE email = ? AND role = 'user'");
         $stmt->execute([$data['Email']]);
         if ($stmt->fetch()) {
             return [null, "User with this email already exists"];
         }
 
-        // Hash password (using bcrypt)
         $hashedPassword = password_hash($data['Password'], PASSWORD_DEFAULT);
 
-        $stmt = $db->prepare("INSERT INTO user (Email, Password, Name, Address, Phone) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $db->prepare(
+            "INSERT INTO users (email, password, name, address, phone, role)
+             VALUES (?, ?, ?, ?, ?, 'user')"
+        );
         try {
             $stmt->execute([
                 $data['Email'],
                 $hashedPassword,
                 $data['Name'],
                 $data['Address'] ?? null,
-                $data['Phone'] ?? null
+                $data['Phone']   ?? null
             ]);
             $userId = $db->lastInsertId();
             return [$userId, null];
@@ -41,43 +43,45 @@ class UserService {
 
     /**
      * Authenticates a user and returns a JWT token.
-     * Replaces Flask's authenticate_user().
+     * Now queries `users` table with role = 'user'.
      */
     public function authenticateUser(string $email, string $password): array {
         $db = Database::get();
-        $stmt = $db->prepare("SELECT * FROM user WHERE Email = ?");
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = 'user'");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if (!$user) return [null, null];
 
-        // Verify password
-        if (password_verify($password, $user['Password'])) {
-            $token = $this->generateToken($user['UserID'], 'user');
+        if (password_verify($password, $user['password'])) {
+            $token = $this->generateToken($user['id'], 'user');
+            // Map to field names the controller expects: Name, Email
+            $user['Name']  = $user['name'];
+            $user['Email'] = $user['email'];
             return [$token, $user];
         }
 
         return [null, null];
     }
 
-    /**
-     * Generates a JWT token for a user/admin.
-     */
     private function generateToken(int $userId, string $role): string {
         $secretKey = $_ENV['SECRET_KEY'] ?? 'fallback_secret_key';
         $payload = [
-            'iat' => time(),
-            'exp' => time() + (24 * 60 * 60), // 1 day expire
-            'sub' => (string) $userId,
-            'user_id' => $userId, // for backward compatibility with Flask
-            'role' => $role
+            'iat'     => time(),
+            'exp'     => time() + (24 * 60 * 60),
+            'sub'     => (string) $userId,
+            'user_id' => $userId, // backward compatibility
+            'role'    => $role
         ];
         return \Firebase\JWT\JWT::encode($payload, $secretKey, 'HS256');
     }
 
     public function getUserById(int $userId): ?array {
         $db = Database::get();
-        $stmt = $db->prepare("SELECT * FROM user WHERE UserID = ?");
+        $stmt = $db->prepare(
+            "SELECT id AS UserID, email AS Email, name AS Name, address AS Address, phone AS Phone
+             FROM users WHERE id = ?"
+        );
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
         return $user ?: null;
@@ -85,19 +89,18 @@ class UserService {
 
     public function updateUser(int $userId, array $data): bool {
         $db = Database::get();
-        
         $fields = [];
         $params = [];
-        
-        if (isset($data['Name'])) { $fields[] = "Name = ?"; $params[] = $data['Name']; }
-        if (isset($data['Address'])) { $fields[] = "Address = ?"; $params[] = $data['Address']; }
-        if (isset($data['Phone'])) { $fields[] = "Phone = ?"; $params[] = $data['Phone']; }
-        if (isset($data['Password'])) { $fields[] = "Password = ?"; $params[] = password_hash($data['Password'], PASSWORD_DEFAULT); }
+
+        if (isset($data['Name']))     { $fields[] = "name = ?";     $params[] = $data['Name']; }
+        if (isset($data['Address']))  { $fields[] = "address = ?";  $params[] = $data['Address']; }
+        if (isset($data['Phone']))    { $fields[] = "phone = ?";    $params[] = $data['Phone']; }
+        if (isset($data['Password'])) { $fields[] = "password = ?"; $params[] = password_hash($data['Password'], PASSWORD_DEFAULT); }
 
         if (empty($fields)) return true;
 
         $params[] = $userId;
-        $sql = "UPDATE user SET " . implode(', ', $fields) . " WHERE UserID = ?";
+        $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?";
         $stmt = $db->prepare($sql);
         return $stmt->execute($params);
     }
