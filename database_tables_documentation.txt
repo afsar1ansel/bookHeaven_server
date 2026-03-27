@@ -1,0 +1,110 @@
+================================================================================
+BOOKHEAVEN DATABASE - CONSOLIDATED SCHEMA DOCUMENTATION
+================================================================================
+Generated Date: 2026-03-27
+Database Type: MySQL / MariaDB (InnoDB)
+Total Tables: 4
+
+This document contains the exact SQL 'CREATE TABLE' statements used to define 
+the BookHeaven system database. This schema uses JSON columns to reduce 
+redundancy and improve efficiency.
+
+TABLE OF CONTENTS
+------------------
+1. [TABLE] users (Consolidated Accounts)
+2. [TABLE] books (Consolidated Catalog)
+3. [TABLE] carts (Consolidated Shopping Carts)
+4. [TABLE] orders (Consolidated Order History & Payments)
+
+================================================================================
+1. TABLE: users
+================================================================================
+Description: This table stores both standard customers and administrators. 
+The 'role' column determines account permissions ('user' or 'admin').
+
+[SQL CREATION CODE]
+CREATE TABLE IF NOT EXISTS `users` (
+    `id`         INT AUTO_INCREMENT PRIMARY KEY,
+    `email`      VARCHAR(255) NOT NULL UNIQUE,
+    `password`   VARCHAR(255) NOT NULL,
+    `name`       VARCHAR(255),
+    `address`    TEXT,
+    `phone`      VARCHAR(50),
+    `role`       ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+================================================================================
+2. TABLE: books
+================================================================================
+Description: This table contains all book metadata. Authors are stored as a 
+JSON array to avoid complex junction tables.
+
+[SQL CREATION CODE]
+CREATE TABLE IF NOT EXISTS `books` (
+    `id`               INT AUTO_INCREMENT PRIMARY KEY,
+    `isbn`             VARCHAR(20) UNIQUE,
+    `title`            VARCHAR(255) NOT NULL,
+    `description`      TEXT,
+    `price`            DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    `stock_quantity`   INT NOT NULL DEFAULT 0,
+    `format`           VARCHAR(50),
+    `publication_date` DATE,
+    `rating`           DECIMAL(3, 1) DEFAULT 0.0,
+    `cover_image_url`  VARCHAR(500),
+    `category`         VARCHAR(100),
+    `authors`          JSON,
+    `created_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+================================================================================
+3. TABLE: carts
+================================================================================
+Description: Stores the shopping cart for each user. Each user has one unique 
+entry where 'items' contains a JSON array of book IDs and quantities.
+
+[SQL CREATION CODE]
+CREATE TABLE IF NOT EXISTS `carts` (
+    `id`         INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id`    INT NOT NULL UNIQUE,
+    `items`      JSON,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+================================================================================
+4. TABLE: orders
+================================================================================
+Description: Records finalized customer orders. It captures a snapshot of items 
+at the moment of checkout and includes payment/transaction details.
+
+[SQL CREATION CODE]
+CREATE TABLE IF NOT EXISTS `orders` (
+    `id`               INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id`          INT NOT NULL,
+    `total_amount`     DECIMAL(10, 2) NOT NULL,
+    `shipping_address` TEXT,
+    `status`           ENUM('Pending', 'Shipped', 'Delivered', 'Cancelled') DEFAULT 'Pending',
+    `payment_method`   VARCHAR(50),
+    `payment_status`   ENUM('Success', 'Failed', 'Pending') DEFAULT 'Pending',
+    `transaction_id`   VARCHAR(100),
+    `items`            JSON,
+    `order_date`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+================================================================================
+SYSTEM CONFIGURATION NOTES
+================================================================================
+1. Foreign Keys are enabled for 'user_id' in both carts and orders tables.
+2. Character set 'utf8mb4' is used for full emoji and special character support.
+3. InnoDB engine is used for transactional reliability.
+4. JSON support requires MySQL 5.7+ or MariaDB 10.2+.
+
+================================================================================
+EOF - END OF FILE
+================================================================================

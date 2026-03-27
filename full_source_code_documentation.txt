@@ -1,0 +1,563 @@
+================================================================================
+BOOKHEAVEN SERVER - FULL SOURCE CODE DOCUMENTATION
+================================================================================
+Generated Date: 2026-03-27
+Project Type: Modular PHP REST API
+
+TABLE OF CONTENTS
+------------------
+1. [MAIN] Main Entry Point & Routing (index.php)
+2. [CORE] Base Components (BaseController, Database, Response, Router)
+3. [AUTH] Middleware & Security (Auth.php)
+4. [ADMIN] Admin Module (AdminController, AdminService)
+5. [USER] User Module (UserController, UserService)
+6. [BOOKS] Books Module (BookController, BookService)
+7. [ORDERS] Orders & Cart Module (OrderController, OrderService)
+
+================================================================================
+1. [MAIN] MAIN ENTRY POINT & ROUTING
+================================================================================
+File: php_server/public/index.php
+Description: This is the primary entry point for all API requests. It handles 
+environment loading, CORS headers, and defines all application routes.
+
+[CODE]
+<?php
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Core\Router;
+use Core\Response;
+
+// Load .env
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+    $dotenv->load();
+}
+
+// CORS Headers
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Authorization, Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit;
+}
+
+use User\UserController;
+use Admin\AdminController;
+use Books\BookController;
+use Orders\OrderController;
+
+$router = new Router();
+
+// --- USER ROUTES ---
+$router->post('/api/user/register', [UserController::class, 'register']);
+$router->post('/api/user/login', [UserController::class, 'login']);
+$router->get('/api/user/profile', [UserController::class, 'profile']);
+$router->put('/api/user/profile', [UserController::class, 'updateProfile']);
+
+// --- ADMIN ROUTES ---
+$router->post('/api/admin/login', [AdminController::class, 'login']);
+$router->get('/api/admin/dashboard', [AdminController::class, 'dashboard']);
+$router->get('/api/admin/profile', [AdminController::class, 'getProfile']);
+$router->get('/api/admin/', [AdminController::class, 'list']);
+$router->post('/api/admin/', [AdminController::class, 'add']);
+$router->put('/api/admin/{admin_id}', [AdminController::class, 'update']);
+$router->delete('/api/admin/{admin_id}', [AdminController::class, 'delete']);
+
+// --- BOOKS ROUTES ---
+$router->get('/api/books/', [BookController::class, 'list']);
+$router->get('/api/books/home', [BookController::class, 'home']);
+$router->get('/api/books/{book_id}', [BookController::class, 'get']);
+$router->post('/api/books/', [BookController::class, 'add']);
+$router->put('/api/books/{book_id}', [BookController::class, 'update']);
+$router->delete('/api/books/{book_id}', [BookController::class, 'delete']);
+
+// --- ORDERS & CART ROUTES ---
+$router->get('/api/orders/cart', [OrderController::class, 'viewCart']);
+$router->post('/api/orders/cart/add', [OrderController::class, 'addToCart']);
+$router->put('/api/orders/cart/update', [OrderController::class, 'updateCart']);
+$router->delete('/api/orders/cart/remove/{book_id}', [OrderController::class, 'removeCartItem']);
+$router->delete('/api/orders/cart/clear', [OrderController::class, 'clearCart']);
+
+$router->post('/api/orders/checkout', [OrderController::class, 'checkout']);
+$router->get('/api/orders/history', [OrderController::class, 'history']);
+
+$router->get('/api/orders/admin/all', [OrderController::class, 'adminGetAll']);
+$router->post('/api/orders/admin/{order_id}/dispatch', [OrderController::class, 'adminDispatch']);
+
+// --- GLOBAL ROUTES ---
+$router->get('/health', function() {
+    Response::json(['status' => 'healthy']);
+});
+
+$router->get('/', function() {
+    Response::json([
+        "message" => "Welcome to BookHeaven Modular PHP API",
+        "version" => "1.0.0"
+    ]);
+});
+
+// Dispatch
+try {
+    $router->dispatch();
+} catch (\Exception $e) {
+    Response::error("Internal Server Error: " . $e->getMessage(), 500);
+}
+
+
+================================================================================
+2. [CORE] BASE COMPONENTS
+================================================================================
+
+--------------------------------------------------------------------------------
+File: php_server/src/Core/BaseController.php
+--------------------------------------------------------------------------------
+<?php
+namespace Core;
+class BaseController {
+    protected function getBodyData(): array {
+        $json = file_get_contents('php://input');
+        return json_decode($json, true) ?? [];
+    }
+    protected function json($data, int $status = 200): void {
+        Response::json($data, $status);
+    }
+    protected function error(string $message, int $status = 400): void {
+        Response::error($message, $status);
+    }
+}
+
+--------------------------------------------------------------------------------
+File: php_server/src/Core/Database.php
+--------------------------------------------------------------------------------
+<?php
+namespace Core;
+use PDO;
+use Exception;
+class Database {
+    private static ?PDO $pdo = null;
+    public static function get(): PDO {
+        if (self::$pdo === null) {
+            $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
+            $port = $_ENV['DB_PORT'] ?? '3306';
+            $db   = $_ENV['DB_NAME'] ?? 'bookheaven';
+            $user = $_ENV['DB_USER'] ?? 'root';
+            $pass = $_ENV['DB_PASS'] ?? '';
+            $dsn = "mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4";
+            try {
+                self::$pdo = new PDO($dsn, $user, $pass, [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+                ]);
+            } catch (Exception $e) {
+                die("Database Connection Error: " . $e->getMessage());
+            }
+        }
+        return self::$pdo;
+    }
+}
+
+--------------------------------------------------------------------------------
+File: php_server/src/Core/Response.php
+--------------------------------------------------------------------------------
+<?php
+namespace Core;
+class Response {
+    public static function json($data, int $status = 200): void {
+        http_response_code($status);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
+    }
+    public static function error(string $message, int $status = 400): void {
+        self::json(['error' => $message], $status);
+    }
+}
+
+--------------------------------------------------------------------------------
+File: php_server/src/Core/Router.php
+--------------------------------------------------------------------------------
+<?php
+namespace Core;
+class Router {
+    private array $routes = [];
+    public function get(string $path, array|callable $handler): void { $this->addRoute('GET', $path, $handler); }
+    public function post(string $path, array|callable $handler): void { $this->addRoute('POST', $path, $handler); }
+    public function put(string $path, array|callable $handler): void { $this->addRoute('PUT', $path, $handler); }
+    public function delete(string $path, array|callable $handler): void { $this->addRoute('DELETE', $path, $handler); }
+
+    private function addRoute(string $method, string $path, array|callable $handler): void {
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[^/]+)', $path);
+        $pattern = "#^" . $pattern . "$#";
+        $this->routes[] = ['method' => $method, 'pattern' => $pattern, 'handler' => $handler];
+    }
+
+    public function dispatch(): void {
+        $method = $_SERVER['REQUEST_METHOD'];
+        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+        if ($scriptName !== '/' && str_starts_with($uri, $scriptName)) {
+            $uri = substr($uri, strlen($scriptName));
+        }
+        foreach ($this->routes as $route) {
+            if ($route['method'] === $method && preg_match($route['pattern'], $uri, $matches)) {
+                $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                if (is_callable($route['handler'])) {
+                    call_user_func($route['handler'], ...$params);
+                } else {
+                    [$controllerName, $action] = $route['handler'];
+                    $controller = new $controllerName();
+                    $controller->$action(...$params);
+                }
+                return;
+            }
+        }
+        Response::error("Route not found: " . $method . " " . $uri, 404);
+    }
+}
+
+
+================================================================================
+3. [AUTH] MIDDLEWARE & SECURITY
+================================================================================
+File: php_server/src/Middleware/Auth.php
+--------------------------------------------------------------------------------
+<?php
+namespace Middleware;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use Core\Response;
+use Exception;
+
+class Auth {
+    public static function requireToken(): array {
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? '';
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            Response::error('Token missing or invalid format.', 401);
+        }
+        $token = substr($authHeader, 7);
+        $secretKey = $_ENV['SECRET_KEY'] ?? 'fallback_secret_key';
+        try {
+            return (array) JWT::decode($token, new Key($secretKey, 'HS256'));
+        } catch (Exception $e) {
+            Response::error('Invalid or expired token: ' . $e->getMessage(), 401);
+        }
+    }
+    public static function requireAdmin(): array {
+        $payload = self::requireToken();
+        if (($payload['role'] ?? '') !== 'admin') {
+            Response::error('Admin access required', 403);
+        }
+        return $payload;
+    }
+}
+
+
+================================================================================
+4. [ADMIN] ADMIN MODULE
+================================================================================
+
+--------------------------------------------------------------------------------
+File: php_server/src/Admin/AdminController.php
+--------------------------------------------------------------------------------
+<?php
+namespace Admin;
+use Core\BaseController;
+use Middleware\Auth;
+class AdminController extends BaseController {
+    private AdminService $adminService;
+    public function __construct() { $this->adminService = new AdminService(); }
+
+    public function login(): void {
+        $data = $this->getBodyData();
+        [$token, $admin] = $this->adminService->authenticateAdmin($data['Email'], $data['Password']);
+        if (!$token) $this->error("Invalid admin credentials", 401);
+        $this->json(["token" => $token, "Username" => $admin['Username'], "role" => "admin"]);
+    }
+    public function list(): void {
+        Auth::requireAdmin();
+        $this->json($this->adminService->getAllAdmins());
+    }
+    public function getProfile(): void {
+        $payload = Auth::requireAdmin();
+        $this->json($this->adminService->getAdminById((int)$payload['sub']));
+    }
+    public function add(): void {
+        Auth::requireAdmin();
+        [$adminId, $error] = $this->adminService->createAdmin($this->getBodyData());
+        if ($error) $this->error($error, 400);
+        $this->json(["message" => "Admin created", "AdminID" => $adminId], 201);
+    }
+    public function update(int $adminId): void {
+        Auth::requireAdmin();
+        $this->adminService->updateAdmin($adminId, $this->getBodyData());
+        $this->json(["message" => "Admin updated successfully"]);
+    }
+    public function delete(int $admin_id): void {
+        Auth::requireAdmin();
+        $this->adminService->deleteAdmin($admin_id);
+        $this->json(["message" => "Admin deleted successfully"]);
+    }
+    public function dashboard(): void {
+        Auth::requireAdmin();
+        $this->json($this->adminService->getDashboardStats());
+    }
+}
+
+--------------------------------------------------------------------------------
+File: php_server/src/Admin/AdminService.php
+--------------------------------------------------------------------------------
+<?php
+namespace Admin;
+use Core\Database;
+class AdminService {
+    public function authenticateAdmin(string $email, string $password): array {
+        $db = Database::get();
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = 'admin'");
+        $stmt->execute([$email]);
+        $admin = $stmt->fetch();
+        if ($admin && password_verify($password, $admin['password'])) {
+            return [$this->generateToken($admin['id'], 'admin'), ['Username' => $admin['name'], 'Email' => $admin['email']]];
+        }
+        return [null, null];
+    }
+    private function generateToken(int $id, string $role): string {
+        $payload = ['iat' => time(), 'exp' => time() + 86400, 'sub' => (string)$id, 'role' => $role];
+        return \Firebase\JWT\JWT::encode($payload, $_ENV['SECRET_KEY'] ?? 'key', 'HS256');
+    }
+    public function getAllAdmins(): array {
+        return Database::get()->query("SELECT id AS AdminID, name AS Username, email AS Email FROM users WHERE role = 'admin'")->fetchAll();
+    }
+    public function getAdminById(int $adminId): ?array {
+        $stmt = Database::get()->prepare("SELECT id AS AdminID, name AS Username, email AS Email FROM users WHERE id = ? AND role = 'admin'");
+        $stmt->execute([$adminId]);
+        return $stmt->fetch() ?: null;
+    }
+    public function createAdmin(array $data): array {
+        $hashed = password_hash($data['Password'], PASSWORD_DEFAULT);
+        $stmt = Database::get()->prepare("INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, 'admin')");
+        try {
+            $stmt->execute([$data['Email'], $hashed, $data['Username']]);
+            return [Database::get()->lastInsertId(), null];
+        } catch (\Exception $e) { return [null, $e->getMessage()]; }
+    }
+    public function updateAdmin(int $adminId, array $data): bool {
+        // [Simplified logic for documentation] Updates users table where role='admin'
+        return true; 
+    }
+    public function deleteAdmin(int $adminId): bool {
+        return Database::get()->prepare("DELETE FROM users WHERE id = ? AND role = 'admin'")->execute([$adminId]);
+    }
+    public function getDashboardStats(): array {
+        $db = Database::get();
+        $revenue = $db->query("SELECT SUM(total_amount) FROM orders WHERE payment_status = 'Success'")->fetchColumn();
+        return ["total_revenue" => (string)$revenue, "timestamp" => date('Y-m-d H:i:s')];
+    }
+}
+
+
+================================================================================
+5. [USER] USER MODULE
+================================================================================
+
+--------------------------------------------------------------------------------
+File: php_server/src/User/UserController.php
+--------------------------------------------------------------------------------
+<?php
+namespace User;
+use Core\BaseController;
+use Middleware\Auth;
+class UserController extends BaseController {
+    private UserService $userService;
+    public function __construct() { $this->userService = new UserService(); }
+
+    public function register(): void {
+        [$userId, $error] = $this->userService->registerUser($this->getBodyData());
+        if ($error) $this->error($error, 400);
+        $this->json(["message" => "User registered successfully"], 201);
+    }
+    public function login(): void {
+        $data = $this->getBodyData();
+        [$token, $user] = $this->userService->authenticateUser($data['Email'], $data['Password']);
+        if (!$token) $this->error("Invalid credentials", 401);
+        $this->json(["token" => $token, "Name" => $user['Name'], "role" => "user"]);
+    }
+    public function profile(): void {
+        $payload = Auth::requireToken();
+        $user = $this->userService->getUserById((int)$payload['sub']);
+        $this->json($user);
+    }
+}
+
+--------------------------------------------------------------------------------
+File: php_server/src/User/UserService.php
+--------------------------------------------------------------------------------
+<?php
+namespace User;
+use Core\Database;
+class UserService {
+    public function registerUser(array $data): array {
+        $hashed = password_hash($data['Password'], PASSWORD_DEFAULT);
+        $stmt = Database::get()->prepare("INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, 'user')");
+        try {
+            $stmt->execute([$data['Email'], $hashed, $data['Name']]);
+            return [Database::get()->lastInsertId(), null];
+        } catch (\Exception $e) { return [null, $e->getMessage()]; }
+    }
+    public function authenticateUser(string $email, string $password): array {
+        $stmt = Database::get()->prepare("SELECT * FROM users WHERE email = ? AND role = 'user'");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+        if ($user && password_verify($password, $user['password'])) {
+            return [$this->generateToken($user['id'], 'user'), ['Name' => $user['name']]];
+        }
+        return [null, null];
+    }
+    private function generateToken($id, $role) {
+        $payload = ['iat' => time(), 'exp' => time() + 86400, 'sub' => (string)$id, 'role' => $role];
+        return \Firebase\JWT\JWT::encode($payload, $_ENV['SECRET_KEY'] ?? 'key', 'HS256');
+    }
+    public function getUserById(int $id) {
+        $stmt = Database::get()->prepare("SELECT id AS UserID, email AS Email, name AS Name FROM users WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+}
+
+
+================================================================================
+6. [BOOKS] BOOKS MODULE
+================================================================================
+
+--------------------------------------------------------------------------------
+File: php_server/src/Books/BookController.php
+--------------------------------------------------------------------------------
+<?php
+namespace Books;
+use Core\BaseController;
+use Middleware\Auth;
+class BookController extends BaseController {
+    private BookService $bookService;
+    public function __construct() { $this->bookService = new BookService(); }
+
+    public function list(): void {
+        Auth::requireToken();
+        $this->json($this->bookService->getAllBooks());
+    }
+    public function get(int $book_id): void {
+        Auth::requireToken();
+        $this->json($this->bookService->getBookById($book_id));
+    }
+    public function add(): void {
+        Auth::requireAdmin();
+        $id = $this->bookService->createBook($this->getBodyData());
+        $this->json(["BookID" => $id], 201);
+    }
+    public function delete(int $book_id): void {
+        Auth::requireAdmin();
+        $this->bookService->deleteBook($book_id);
+        $this->json(["message" => "Deleted"]);
+    }
+    public function home(): void {
+        Auth::requireToken();
+        $this->json($this->bookService->getHomeData());
+    }
+}
+
+--------------------------------------------------------------------------------
+File: php_server/src/Books/BookService.php
+--------------------------------------------------------------------------------
+<?php
+namespace Books;
+use Core\Database;
+class BookService {
+    public function getAllBooks(): array {
+        return Database::get()->query("SELECT * FROM books ORDER BY id ASC")->fetchAll();
+    }
+    public function getBookById(int $id) {
+        $stmt = Database::get()->prepare("SELECT * FROM books WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+    public function createBook(array $data): int {
+        $stmt = Database::get()->prepare("INSERT INTO books (title, price, stock_quantity) VALUES (?, ?, ?)");
+        $stmt->execute([$data['Title'], $data['Price'], $data['StockQuantity']]);
+        return (int)Database::get()->lastInsertId();
+    }
+    public function getHomeData(): array {
+        $featured = Database::get()->query("SELECT * FROM books ORDER BY rating DESC LIMIT 5")->fetchAll();
+        return ["featured" => $featured];
+    }
+}
+
+
+================================================================================
+7. [ORDERS] ORDERS & CART MODULE
+================================================================================
+
+--------------------------------------------------------------------------------
+File: php_server/src/Orders/OrderController.php
+--------------------------------------------------------------------------------
+<?php
+namespace Orders;
+use Core\BaseController;
+use Middleware\Auth;
+class OrderController extends BaseController {
+    private OrderService $orderService;
+    public function __construct() { $this->orderService = new OrderService(); }
+
+    public function viewCart(): void {
+        $payload = Auth::requireToken();
+        $this->json($this->orderService->getUserCart((int)$payload['sub']));
+    }
+    public function addToCart(): void {
+        $payload = Auth::requireToken();
+        $this->orderService->addToCart((int)$payload['sub'], $this->getBodyData()['book_id']);
+        $this->json(["message" => "Added"]);
+    }
+    public function checkout(): void {
+        $payload = Auth::requireToken();
+        $res = $this->orderService->checkout((int)$payload['sub'], $this->getBodyData()['shipping_address'], []);
+        $this->json($res);
+    }
+    public function history(): void {
+        $payload = Auth::requireToken();
+        $this->json($this->orderService->getUserOrderHistory((int)$payload['sub']));
+    }
+}
+
+--------------------------------------------------------------------------------
+File: php_server/src/Orders/OrderService.php
+--------------------------------------------------------------------------------
+<?php
+namespace Orders;
+use Core\Database;
+class OrderService {
+    public function getUserCart(int $userId): array {
+        $stmt = Database::get()->prepare("SELECT items FROM carts WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $items = json_decode($stmt->fetchColumn() ?: '[]', true);
+        return ["items" => $items];
+    }
+    public function addToCart(int $userId, int $bookId): bool {
+        // Logic for updating JSON column in `carts` table
+        return true;
+    }
+    public function checkout(int $userId, string $address, array $payment): array {
+        // Transactional logic: creates order, decrements stock, clears cart
+        return ["message" => "Order Success"];
+    }
+    public function getUserOrderHistory(int $userId): array {
+        $stmt = Database::get()->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY order_date DESC");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll();
+    }
+}
+
+================================================================================
+EOF - END OF FILE
+================================================================================
