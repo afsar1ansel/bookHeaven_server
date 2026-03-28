@@ -213,10 +213,10 @@ class OrderService {
 
                 // Build order items snapshot (title captured at time of order)
                 $orderItems[] = [
-                    'book_id'    => $item['BookID'],
-                    'title'      => $item['Title'],
-                    'quantity'   => $item['Quantity'],
-                    'unit_price' => $item['Price'],
+                    'BookID'    => $item['BookID'],
+                    'Title'     => $item['Title'],
+                    'Quantity'  => $item['Quantity'],
+                    'UnitPrice' => $item['Price'],
                 ];
             }
 

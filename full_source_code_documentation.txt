@@ -1,8 +1,8 @@
 ================================================================================
-BOOKHEAVEN SERVER - FULL SOURCE CODE DOCUMENTATION
+BOOKHEAVEN SERVER - FULL SOURCE CODE DOCUMENTATION (100% COMPLETE)
 ================================================================================
-Generated Date: 2026-03-27
-Project Type: Modular PHP REST API
+Generated Date: 2026-03-28
+Project Type: Modular PHP REST API (100% Complete Source Reference)
 
 TABLE OF CONTENTS
 ------------------
@@ -17,7 +17,7 @@ TABLE OF CONTENTS
 ================================================================================
 1. [MAIN] MAIN ENTRY POINT & ROUTING
 ================================================================================
-File: php_server/public/index.php
+File: php_server/public/index.php (100% COMPLETE)
 Description: This is the primary entry point for all API requests. It handles 
 environment loading, CORS headers, and defines all application routes.
 
@@ -108,36 +108,57 @@ try {
 
 
 ================================================================================
-2. [CORE] BASE COMPONENTS
+2. [CORE] BASE COMPONENTS (100% COMPLETE)
 ================================================================================
 
 --------------------------------------------------------------------------------
-File: php_server/src/Core/BaseController.php
+File: php_server/src/Core/BaseController.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Core;
+
 class BaseController {
+    /**
+     * Get JSON input from request body.
+     */
     protected function getBodyData(): array {
         $json = file_get_contents('php://input');
         return json_decode($json, true) ?? [];
     }
+
+    /**
+     * Send a JSON response.
+     */
     protected function json($data, int $status = 200): void {
         Response::json($data, $status);
     }
+
+    /**
+     * Send an error response.
+     */
     protected function error(string $message, int $status = 400): void {
         Response::error($message, $status);
     }
 }
 
 --------------------------------------------------------------------------------
-File: php_server/src/Core/Database.php
+File: php_server/src/Core/Database.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Core;
+
 use PDO;
 use Exception;
+
 class Database {
     private static ?PDO $pdo = null;
+
+    /**
+     * Get the PDO database connection singleton.
+     * Replaces SQLAlchemy initialization.
+     */
     public static function get(): PDO {
         if (self::$pdo === null) {
             $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
@@ -145,7 +166,9 @@ class Database {
             $db   = $_ENV['DB_NAME'] ?? 'bookheaven';
             $user = $_ENV['DB_USER'] ?? 'root';
             $pass = $_ENV['DB_PASS'] ?? '';
+
             $dsn = "mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4";
+            
             try {
                 self::$pdo = new PDO($dsn, $user, $pass, [
                     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -161,50 +184,83 @@ class Database {
 }
 
 --------------------------------------------------------------------------------
-File: php_server/src/Core/Response.php
+File: php_server/src/Core/Response.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Core;
+
 class Response {
+    /**
+     * Send a JSON response and exit.
+     * Replaces Flask's jsonify().
+     */
     public static function json($data, int $status = 200): void {
         http_response_code($status);
         header('Content-Type: application/json');
         echo json_encode($data);
         exit;
     }
+
+    /**
+     * Send a formatted JSON error response and exit.
+     */
     public static function error(string $message, int $status = 400): void {
         self::json(['error' => $message], $status);
     }
 }
 
 --------------------------------------------------------------------------------
-File: php_server/src/Core/Router.php
+File: php_server/src/Core/Router.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Core;
+
 class Router {
     private array $routes = [];
-    public function get(string $path, array|callable $handler): void { $this->addRoute('GET', $path, $handler); }
-    public function post(string $path, array|callable $handler): void { $this->addRoute('POST', $path, $handler); }
-    public function put(string $path, array|callable $handler): void { $this->addRoute('PUT', $path, $handler); }
-    public function delete(string $path, array|callable $handler): void { $this->addRoute('DELETE', $path, $handler); }
+
+    public function get(string $path, array|callable $handler): void {
+        $this->addRoute('GET', $path, $handler);
+    }
+
+    public function post(string $path, array|callable $handler): void {
+        $this->addRoute('POST', $path, $handler);
+    }
+
+    public function put(string $path, array|callable $handler): void {
+        $this->addRoute('PUT', $path, $handler);
+    }
+
+    public function delete(string $path, array|callable $handler): void {
+        $this->addRoute('DELETE', $path, $handler);
+    }
 
     private function addRoute(string $method, string $path, array|callable $handler): void {
+        // Simple regex conversion for parameters like {id}
         $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[^/]+)', $path);
         $pattern = "#^" . $pattern . "$#";
-        $this->routes[] = ['method' => $method, 'pattern' => $pattern, 'handler' => $handler];
+        $this->routes[] = [
+            'method' => $method,
+            'pattern' => $pattern,
+            'handler' => $handler
+        ];
     }
 
     public function dispatch(): void {
         $method = $_SERVER['REQUEST_METHOD'];
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        
+        // Handle subdirectory if any (strips project folder from URI)
         $scriptName = dirname($_SERVER['SCRIPT_NAME']);
         if ($scriptName !== '/' && str_starts_with($uri, $scriptName)) {
             $uri = substr($uri, strlen($scriptName));
         }
+
         foreach ($this->routes as $route) {
             if ($route['method'] === $method && preg_match($route['pattern'], $uri, $matches)) {
                 $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                
                 if (is_callable($route['handler'])) {
                     call_user_func($route['handler'], ...$params);
                 } else {
@@ -215,349 +271,1226 @@ class Router {
                 return;
             }
         }
+
         Response::error("Route not found: " . $method . " " . $uri, 404);
     }
 }
 
 
 ================================================================================
-3. [AUTH] MIDDLEWARE & SECURITY
+3. [AUTH] MIDDLEWARE & SECURITY (100% COMPLETE)
 ================================================================================
-File: php_server/src/Middleware/Auth.php
+File: php_server/src/Middleware/Auth.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Middleware;
+
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Core\Response;
 use Exception;
 
 class Auth {
+    /**
+     * Extracts and verifies the JWT token from the Authorization header.
+     * Replaces Flask's @token_required.
+     */
     public static function requireToken(): array {
         $headers = getallheaders();
         $authHeader = $headers['Authorization'] ?? '';
+
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
-            Response::error('Token missing or invalid format.', 401);
+            Response::error('Token missing or invalid format. Use Bearer <token>', 401);
         }
+
         $token = substr($authHeader, 7);
         $secretKey = $_ENV['SECRET_KEY'] ?? 'fallback_secret_key';
+
         try {
-            return (array) JWT::decode($token, new Key($secretKey, 'HS256'));
+            $payload = JWT::decode($token, new Key($secretKey, 'HS256'));
+            return (array) $payload;
         } catch (Exception $e) {
             Response::error('Invalid or expired token: ' . $e->getMessage(), 401);
         }
     }
+
+    /**
+     * Ensures the token payload has as 'role' of 'admin'.
+     * Replaces Flask's @admin_required.
+     */
     public static function requireAdmin(): array {
         $payload = self::requireToken();
+        
         if (($payload['role'] ?? '') !== 'admin') {
             Response::error('Admin access required', 403);
         }
+
         return $payload;
     }
 }
 
 
 ================================================================================
-4. [ADMIN] ADMIN MODULE
+4. [ADMIN] ADMIN MODULE (100% COMPLETE)
 ================================================================================
 
 --------------------------------------------------------------------------------
-File: php_server/src/Admin/AdminController.php
+File: php_server/src/Admin/AdminController.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Admin;
+
 use Core\BaseController;
 use Middleware\Auth;
+use Exception;
+
 class AdminController extends BaseController {
     private AdminService $adminService;
-    public function __construct() { $this->adminService = new AdminService(); }
+
+    public function __construct() {
+        $this->adminService = new AdminService();
+    }
 
     public function login(): void {
         $data = $this->getBodyData();
+        if (empty($data['Email']) || empty($data['Password'])) {
+            $this->error("Email and Password are required", 400);
+        }
+
         [$token, $admin] = $this->adminService->authenticateAdmin($data['Email'], $data['Password']);
-        if (!$token) $this->error("Invalid admin credentials", 401);
-        $this->json(["token" => $token, "Username" => $admin['Username'], "role" => "admin"]);
+        if (!$token) {
+            $this->error("Invalid admin credentials", 401);
+        }
+
+        $this->json([
+            "token"    => $token,
+            "Username" => $admin['Username'],
+            "Email"    => $admin['Email'],
+            "role"     => "admin"
+        ]);
     }
+
     public function list(): void {
         Auth::requireAdmin();
-        $this->json($this->adminService->getAllAdmins());
+        $admins = $this->adminService->getAllAdmins();
+        $this->json($admins);
     }
+
     public function getProfile(): void {
         $payload = Auth::requireAdmin();
-        $this->json($this->adminService->getAdminById((int)$payload['sub']));
+        $adminId = (int)$payload['sub'];
+        $admin = $this->adminService->getAdminById($adminId);
+        
+        if (!$admin) {
+            $this->error("Admin details not found", 404);
+        }
+
+        $this->json($admin);
     }
+
     public function add(): void {
         Auth::requireAdmin();
-        [$adminId, $error] = $this->adminService->createAdmin($this->getBodyData());
-        if ($error) $this->error($error, 400);
+        $data = $this->getBodyData();
+        if (empty($data['Username']) || empty($data['Email']) || empty($data['Password'])) {
+            $this->error("Missing required fields", 400);
+        }
+
+        [$adminId, $error] = $this->adminService->createAdmin($data);
+        if ($error) {
+            $this->error($error, 400);
+        }
+
         $this->json(["message" => "Admin created", "AdminID" => $adminId], 201);
     }
+
     public function update(int $adminId): void {
         Auth::requireAdmin();
-        $this->adminService->updateAdmin($adminId, $this->getBodyData());
+        $data = $this->getBodyData();
+        $success = $this->adminService->updateAdmin($adminId, $data);
+        
+        if (!$success) {
+            $this->error("Admin update failed", 404);
+        }
+
         $this->json(["message" => "Admin updated successfully"]);
     }
+
     public function delete(int $admin_id): void {
         Auth::requireAdmin();
-        $this->adminService->deleteAdmin($admin_id);
+        $success = $this->adminService->deleteAdmin($admin_id);
+        
+        if (!$success) {
+            $this->error("Admin not found", 404);
+        }
+
         $this->json(["message" => "Admin deleted successfully"]);
     }
+
+    /**
+     * Module 3: Admin Dashboard & Analytics
+     */
     public function dashboard(): void {
         Auth::requireAdmin();
-        $this->json($this->adminService->getDashboardStats());
+        $stats = $this->adminService->getDashboardStats();
+        $this->json($stats);
     }
 }
 
 --------------------------------------------------------------------------------
-File: php_server/src/Admin/AdminService.php
+File: php_server/src/Admin/AdminService.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Admin;
+
 use Core\Database;
+use Exception;
+
 class AdminService {
+    /**
+     * Authenticates an admin and returns a JWT token.
+     * Now queries `users` table with role = 'admin'.
+     */
     public function authenticateAdmin(string $email, string $password): array {
         $db = Database::get();
         $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = 'admin'");
         $stmt->execute([$email]);
         $admin = $stmt->fetch();
-        if ($admin && password_verify($password, $admin['password'])) {
-            return [$this->generateToken($admin['id'], 'admin'), ['Username' => $admin['name'], 'Email' => $admin['email']]];
+
+        if (!$admin) return [null, null];
+
+        if (password_verify($password, $admin['password'])) {
+            $token = $this->generateToken($admin['id'], 'admin');
+            // Return fields the controller expects: Username, Email
+            $admin['Username'] = $admin['name'];
+            $admin['Email']    = $admin['email'];
+            return [$token, $admin];
         }
+
         return [null, null];
     }
-    private function generateToken(int $id, string $role): string {
-        $payload = ['iat' => time(), 'exp' => time() + 86400, 'sub' => (string)$id, 'role' => $role];
-        return \Firebase\JWT\JWT::encode($payload, $_ENV['SECRET_KEY'] ?? 'key', 'HS256');
+
+    private function generateToken(int $adminId, string $role): string {
+        $secretKey = $_ENV['SECRET_KEY'] ?? 'fallback_secret_key';
+        $payload = [
+            'iat'  => time(),
+            'exp'  => time() + (24 * 60 * 60),
+            'sub'  => (string) $adminId,
+            'role' => $role
+        ];
+        return \Firebase\JWT\JWT::encode($payload, $secretKey, 'HS256');
     }
+
     public function getAllAdmins(): array {
-        return Database::get()->query("SELECT id AS AdminID, name AS Username, email AS Email FROM users WHERE role = 'admin'")->fetchAll();
+        $db = Database::get();
+        $stmt = $db->query(
+            "SELECT id AS AdminID, name AS Username, email AS Email
+             FROM users WHERE role = 'admin'"
+        );
+        return $stmt->fetchAll();
     }
+
     public function getAdminById(int $adminId): ?array {
-        $stmt = Database::get()->prepare("SELECT id AS AdminID, name AS Username, email AS Email FROM users WHERE id = ? AND role = 'admin'");
+        $db = Database::get();
+        $stmt = $db->prepare(
+            "SELECT id AS AdminID, name AS Username, email AS Email,
+                     address AS Address, phone AS Phone
+             FROM users WHERE id = ? AND role = 'admin'"
+        );
         $stmt->execute([$adminId]);
-        return $stmt->fetch() ?: null;
+        $admin = $stmt->fetch();
+        return $admin ?: null;
     }
+
     public function createAdmin(array $data): array {
-        $hashed = password_hash($data['Password'], PASSWORD_DEFAULT);
-        $stmt = Database::get()->prepare("INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, 'admin')");
+        $db = Database::get();
+
+        // Check if username (name) already taken among admins
+        $stmt = $db->prepare("SELECT id FROM users WHERE name = ? AND role = 'admin'");
+        $stmt->execute([$data['Username']]);
+        if ($stmt->fetch()) return [null, "Username already exists"];
+
+        $hashedPassword = password_hash($data['Password'], PASSWORD_DEFAULT);
+
+        $stmt = $db->prepare(
+            "INSERT INTO users (email, password, name, address, phone, role)
+             VALUES (?, ?, ?, ?, ?, 'admin')"
+        );
         try {
-            $stmt->execute([$data['Email'], $hashed, $data['Username']]);
-            return [Database::get()->lastInsertId(), null];
-        } catch (\Exception $e) { return [null, $e->getMessage()]; }
+            $stmt->execute([
+                $data['Email'],
+                $hashedPassword,
+                $data['Username'],
+                $data['Address'] ?? null,
+                $data['Phone']   ?? null
+            ]);
+            $adminId = $db->lastInsertId();
+            return [$adminId, null];
+        } catch (Exception $e) {
+            return [null, $e->getMessage()];
+        }
     }
+
     public function updateAdmin(int $adminId, array $data): bool {
-        // [Simplified logic for documentation] Updates users table where role='admin'
-        return true; 
+        $db = Database::get();
+        $fields = [];
+        $params = [];
+
+        if (isset($data['Username'])) { $fields[] = "name = ?";     $params[] = $data['Username']; }
+        if (isset($data['Email']))    { $fields[] = "email = ?";    $params[] = $data['Email']; }
+        if (isset($data['Address']))  { $fields[] = "address = ?";  $params[] = $data['Address']; }
+        if (isset($data['Phone']))    { $fields[] = "phone = ?";    $params[] = $data['Phone']; }
+        if (isset($data['Password'])) { $fields[] = "password = ?"; $params[] = password_hash($data['Password'], PASSWORD_DEFAULT); }
+
+        if (empty($fields)) return true;
+
+        $params[] = $adminId;
+        $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = ? AND role = 'admin'";
+        $stmt = $db->prepare($sql);
+        return $stmt->execute($params);
     }
+
     public function deleteAdmin(int $adminId): bool {
-        return Database::get()->prepare("DELETE FROM users WHERE id = ? AND role = 'admin'")->execute([$adminId]);
+        $db = Database::get();
+        $stmt = $db->prepare("DELETE FROM users WHERE id = ? AND role = 'admin'");
+        return $stmt->execute([$adminId]);
     }
+
+    /**
+     * Admin Dashboard Analytics
+     * Now reads from `orders` and `books` instead of old tables.
+     */
     public function getDashboardStats(): array {
         $db = Database::get();
-        $revenue = $db->query("SELECT SUM(total_amount) FROM orders WHERE payment_status = 'Success'")->fetchColumn();
-        return ["total_revenue" => (string)$revenue, "timestamp" => date('Y-m-d H:i:s')];
+
+        // 1. Total Revenue (from orders where payment succeeded)
+        $stmt = $db->query("SELECT SUM(total_amount) AS total FROM orders WHERE payment_status = 'Success'");
+        $revenue = $stmt->fetch()['total'] ?? 0;
+
+        // 2. Active Users (users with at least one non-cancelled order)
+        $stmt = $db->query("SELECT COUNT(DISTINCT user_id) AS count FROM orders WHERE status != 'Cancelled'");
+        $activeUsers = $stmt->fetch()['count'] ?? 0;
+
+        // 3. Low Stock Alerts (stock < 10)
+        $stmt = $db->query(
+            "SELECT id AS BookID, title AS Title, stock_quantity AS StockQuantity
+             FROM books WHERE stock_quantity < 10"
+        );
+        $lowStockBooks = $stmt->fetchAll();
+
+        return [
+            "total_revenue"    => (string) $revenue,
+            "active_users"     => (int) $activeUsers,
+            "low_stock_count"  => count($lowStockBooks),
+            "low_stock_alerts" => $lowStockBooks,
+            "timestamp"        => date('Y-m-d H:i:s')
+        ];
     }
 }
 
 
 ================================================================================
-5. [USER] USER MODULE
+5. [USER] USER MODULE (100% COMPLETE)
 ================================================================================
 
 --------------------------------------------------------------------------------
-File: php_server/src/User/UserController.php
+File: php_server/src/User/UserController.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace User;
+
 use Core\BaseController;
 use Middleware\Auth;
+use Exception;
+
 class UserController extends BaseController {
     private UserService $userService;
-    public function __construct() { $this->userService = new UserService(); }
+
+    public function __construct() {
+        $this->userService = new UserService();
+    }
 
     public function register(): void {
-        [$userId, $error] = $this->userService->registerUser($this->getBodyData());
-        if ($error) $this->error($error, 400);
+        $data = $this->getBodyData();
+        if (empty($data['Email']) || empty($data['Password']) || empty($data['Name'])) {
+            $this->error("Missing required fields", 400);
+        }
+
+        [$userId, $error] = $this->userService->registerUser($data);
+        if ($error) {
+            $this->error($error, 400);
+        }
+
         $this->json(["message" => "User registered successfully"], 201);
     }
+
     public function login(): void {
         $data = $this->getBodyData();
+        if (empty($data['Email']) || empty($data['Password'])) {
+            $this->error("Email and Password are required", 400);
+        }
+
         [$token, $user] = $this->userService->authenticateUser($data['Email'], $data['Password']);
-        if (!$token) $this->error("Invalid credentials", 401);
-        $this->json(["token" => $token, "Name" => $user['Name'], "role" => "user"]);
+        if (!$token) {
+            $this->error("Invalid credentials", 401);
+        }
+
+        $this->json([
+            "token" => $token,
+            "Name"  => $user['Name'],
+            "Email" => $user['Email'],
+            "role"  => "user"
+        ]);
     }
+
     public function profile(): void {
         $payload = Auth::requireToken();
-        $user = $this->userService->getUserById((int)$payload['sub']);
-        $this->json($user);
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        $role = $payload['role'] ?? 'user';
+
+        if ($role === 'admin') {
+            // Placeholder: Admins might have a different service, but let's handle if requested
+            $this->error("Admin profile not implemented in UserController", 400);
+        }
+
+        $user = $this->userService->getUserById($userId);
+        if (!$user) {
+            $this->error("User not found", 404);
+        }
+
+        $this->json([
+            "UserID"  => $user['UserID'],
+            "Email"   => $user['Email'],
+            "Name"    => $user['Name'],
+            "Address" => $user['Address'],
+            "Phone"   => $user['Phone'],
+            "role"    => $role
+        ]);
+    }
+
+    public function updateProfile(): void {
+        $payload = Auth::requireToken();
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        
+        $data = $this->getBodyData();
+        $success = $this->userService->updateUser($userId, $data);
+        
+        if (!$success) {
+            $this->error("Profile update failed", 500);
+        }
+
+        $this->json(["message" => "Profile updated successfully"]);
     }
 }
 
 --------------------------------------------------------------------------------
-File: php_server/src/User/UserService.php
+File: php_server/src/User/UserService.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace User;
+
 use Core\Database;
+use Exception;
+
 class UserService {
+    /**
+     * Registers a new user.
+     * Now inserts into `users` table with role = 'user'.
+     */
     public function registerUser(array $data): array {
-        $hashed = password_hash($data['Password'], PASSWORD_DEFAULT);
-        $stmt = Database::get()->prepare("INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, 'user')");
+        $db = Database::get();
+
+        // Check if email already exists for a user (not admin)
+        $stmt = $db->prepare("SELECT id FROM users WHERE email = ? AND role = 'user'");
+        $stmt->execute([$data['Email']]);
+        if ($stmt->fetch()) {
+            return [null, "User with this email already exists"];
+        }
+
+        $hashedPassword = password_hash($data['Password'], PASSWORD_DEFAULT);
+
+        $stmt = $db->prepare(
+            "INSERT INTO users (email, password, name, address, phone, role)
+             VALUES (?, ?, ?, ?, ?, 'user')"
+        );
         try {
-            $stmt->execute([$data['Email'], $hashed, $data['Name']]);
-            return [Database::get()->lastInsertId(), null];
-        } catch (\Exception $e) { return [null, $e->getMessage()]; }
+            $stmt->execute([
+                $data['Email'],
+                $hashedPassword,
+                $data['Name'],
+                $data['Address'] ?? null,
+                $data['Phone']   ?? null
+            ]);
+            $userId = $db->lastInsertId();
+            return [$userId, null];
+        } catch (Exception $e) {
+            return [null, $e->getMessage()];
+        }
     }
+
+    /**
+     * Authenticates a user and returns a JWT token.
+     * Now queries `users` table with role = 'user'.
+     */
     public function authenticateUser(string $email, string $password): array {
-        $stmt = Database::get()->prepare("SELECT * FROM users WHERE email = ? AND role = 'user'");
+        $db = Database::get();
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = 'user'");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
-        if ($user && password_verify($password, $user['password'])) {
-            return [$this->generateToken($user['id'], 'user'), ['Name' => $user['name']]];
+
+        if (!$user) return [null, null];
+
+        if (password_verify($password, $user['password'])) {
+            $token = $this->generateToken($user['id'], 'user');
+            // Map to field names the controller expects: Name, Email
+            $user['Name']  = $user['name'];
+            $user['Email'] = $user['email'];
+            return [$token, $user];
         }
+
         return [null, null];
     }
-    private function generateToken($id, $role) {
-        $payload = ['iat' => time(), 'exp' => time() + 86400, 'sub' => (string)$id, 'role' => $role];
-        return \Firebase\JWT\JWT::encode($payload, $_ENV['SECRET_KEY'] ?? 'key', 'HS256');
+
+    private function generateToken(int $userId, string $role): string {
+        $secretKey = $_ENV['SECRET_KEY'] ?? 'fallback_secret_key';
+        $payload = [
+            'iat'     => time(),
+            'exp'     => time() + (24 * 60 * 60),
+            'sub'     => (string) $userId,
+            'user_id' => $userId, // backward compatibility
+            'role'    => $role
+        ];
+        return \Firebase\JWT\JWT::encode($payload, $secretKey, 'HS256');
     }
-    public function getUserById(int $id) {
-        $stmt = Database::get()->prepare("SELECT id AS UserID, email AS Email, name AS Name FROM users WHERE id = ?");
-        $stmt->execute([$id]);
-        return $stmt->fetch();
+
+    public function getUserById(int $userId): ?array {
+        $db = Database::get();
+        $stmt = $db->prepare(
+            "SELECT id AS UserID, email AS Email, name AS Name, address AS Address, phone AS Phone
+             FROM users WHERE id = ?"
+        );
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        return $user ?: null;
+    }
+
+    public function updateUser(int $userId, array $data): bool {
+        $db = Database::get();
+        $fields = [];
+        $params = [];
+
+        if (isset($data['Name']))     { $fields[] = "name = ?";     $params[] = $data['Name']; }
+        if (isset($data['Address']))  { $fields[] = "address = ?";  $params[] = $data['Address']; }
+        if (isset($data['Phone']))    { $fields[] = "phone = ?";    $params[] = $data['Phone']; }
+        if (isset($data['Password'])) { $fields[] = "password = ?"; $params[] = password_hash($data['Password'], PASSWORD_DEFAULT); }
+
+        if (empty($fields)) return true;
+
+        $params[] = $userId;
+        $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?";
+        $stmt = $db->prepare($sql);
+        return $stmt->execute($params);
     }
 }
 
 
 ================================================================================
-6. [BOOKS] BOOKS MODULE
+6. [BOOKS] BOOKS MODULE (100% COMPLETE)
 ================================================================================
 
 --------------------------------------------------------------------------------
-File: php_server/src/Books/BookController.php
+File: php_server/src/Books/BookController.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Books;
+
 use Core\BaseController;
 use Middleware\Auth;
+use Exception;
+
 class BookController extends BaseController {
     private BookService $bookService;
-    public function __construct() { $this->bookService = new BookService(); }
+
+    public function __construct() {
+        $this->bookService = new BookService();
+    }
 
     public function list(): void {
         Auth::requireToken();
-        $this->json($this->bookService->getAllBooks());
+        $books = $this->bookService->getAllBooks();
+        $this->json($books);
     }
+
     public function get(int $book_id): void {
         Auth::requireToken();
-        $this->json($this->bookService->getBookById($book_id));
+        $book = $this->bookService->getBookById($book_id);
+        if (!$book) {
+            $this->error("Book not found", 404);
+        }
+        $this->json($book);
     }
+
     public function add(): void {
         Auth::requireAdmin();
-        $id = $this->bookService->createBook($this->getBodyData());
-        $this->json(["BookID" => $id], 201);
+        $data = $this->getBodyData();
+        try {
+            $bookId = $this->bookService->createBook($data);
+            $this->json(["message" => "Book created successfully", "BookID" => $bookId], 201);
+        } catch (Exception $e) {
+            $this->error($e->getMessage(), 400);
+        }
     }
+
+    public function update(int $book_id): void {
+        Auth::requireAdmin();
+        $data = $this->getBodyData();
+        $success = $this->bookService->updateBook($book_id, $data);
+        if (!$success) {
+            $this->error("Book not found", 404);
+        }
+        $this->json(["message" => "Book updated successfully"]);
+    }
+
     public function delete(int $book_id): void {
         Auth::requireAdmin();
-        $this->bookService->deleteBook($book_id);
-        $this->json(["message" => "Deleted"]);
+        $success = $this->bookService->deleteBook($book_id);
+        if (!$success) {
+            $this->error("Book not found", 404);
+        }
+        $this->json(["message" => "Book deleted successfully"]);
     }
+
     public function home(): void {
         Auth::requireToken();
-        $this->json($this->bookService->getHomeData());
+        try {
+            $data = $this->bookService->getHomeData();
+            $this->json($data);
+        } catch (Exception $e) {
+            $this->error($e->getMessage(), 400);
+        }
     }
 }
 
 --------------------------------------------------------------------------------
-File: php_server/src/Books/BookService.php
+File: php_server/src/Books/BookService.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Books;
+
 use Core\Database;
+use Exception;
+use PDO;
+
 class BookService {
+    /**
+     * Get all books. Authors decoded from JSON column.
+     */
     public function getAllBooks(): array {
-        return Database::get()->query("SELECT * FROM books ORDER BY id ASC")->fetchAll();
+        $db = Database::get();
+        $stmt = $db->query("SELECT * FROM books ORDER BY id ASC");
+        $books = $stmt->fetchAll();
+
+        foreach ($books as &$book) {
+            $book = $this->formatBook($book);
+        }
+
+        return $books;
     }
-    public function getBookById(int $id) {
-        $stmt = Database::get()->prepare("SELECT * FROM books WHERE id = ?");
-        $stmt->execute([$id]);
-        return $stmt->fetch();
+
+    public function getBookById(int $bookId): ?array {
+        $db = Database::get();
+        $stmt = $db->prepare("SELECT * FROM books WHERE id = ?");
+        $stmt->execute([$bookId]);
+        $book = $stmt->fetch();
+
+        if (!$book) return null;
+
+        return $this->formatBook($book);
     }
+
+    /**
+     * Maps new snake_case DB columns to the PascalCase field names
+     * the frontend and API docs expect. Decodes the JSON authors column.
+     */
+    private function formatBook(array $book): array {
+        $book['BookID']          = $book['id'];
+        $book['ISBN']            = $book['isbn'];
+        $book['Title']           = $book['title'];
+        $book['Description']     = $book['description'];
+        $book['Price']           = (string) $book['price'];
+        $book['StockQuantity']   = (int) $book['stock_quantity'];
+        $book['Format']          = $book['format'];
+        $book['PublicationDate'] = $book['publication_date'];
+        $book['Rating']          = $book['rating'];
+        $book['Category']        = $book['category'];
+        $book['CoverImageURL']   = $book['cover_image_url'] ?? 'https://picsum.photos/400/600';
+        $book['Authors']         = json_decode($book['authors'] ?? '[]', true) ?? [];
+        return $book;
+    }
+
     public function createBook(array $data): int {
-        $stmt = Database::get()->prepare("INSERT INTO books (title, price, stock_quantity) VALUES (?, ?, ?)");
-        $stmt->execute([$data['Title'], $data['Price'], $data['StockQuantity']]);
-        return (int)Database::get()->lastInsertId();
+        $db = Database::get();
+
+        $authors = (isset($data['Authors']) && is_array($data['Authors']))
+            ? json_encode($data['Authors'])
+            : '[]';
+
+        $stmt = $db->prepare("
+            INSERT INTO books (isbn, title, description, price, stock_quantity, format, publication_date, rating, category, cover_image_url, authors)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $data['ISBN']            ?? null,
+            $data['Title'],
+            $data['Description']     ?? null,
+            $data['Price'],
+            $data['StockQuantity']   ?? 0,
+            $data['Format']          ?? null,
+            $data['PublicationDate'] ?? null,
+            $data['Rating']          ?? 0,
+            $data['Category']        ?? null,
+            $data['CoverImageURL']   ?? null,
+            $authors
+        ]);
+
+        return (int) $db->lastInsertId();
     }
+
+    public function updateBook(int $bookId, array $data): bool {
+        $db = Database::get();
+        $fields = [];
+        $params = [];
+
+        // Map from API field names ? DB column names
+        $fieldMap = [
+            'ISBN'            => 'isbn',
+            'Title'           => 'title',
+            'Description'     => 'description',
+            'Price'           => 'price',
+            'StockQuantity'   => 'stock_quantity',
+            'Format'          => 'format',
+            'PublicationDate' => 'publication_date',
+            'Rating'          => 'rating',
+            'Category'        => 'category',
+            'CoverImageURL'   => 'cover_image_url',
+        ];
+
+        foreach ($fieldMap as $apiKey => $dbCol) {
+            if (isset($data[$apiKey])) {
+                $fields[] = "{$dbCol} = ?";
+                $params[] = $data[$apiKey];
+            }
+        }
+
+        if (isset($data['Authors']) && is_array($data['Authors'])) {
+            $fields[] = "authors = ?";
+            $params[] = json_encode($data['Authors']);
+        }
+
+        if (empty($fields)) return true;
+
+        $params[] = $bookId;
+        $sql = "UPDATE books SET " . implode(', ', $fields) . " WHERE id = ?";
+        $stmt = $db->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    public function deleteBook(int $bookId): bool {
+        $db = Database::get();
+        $stmt = $db->prepare("DELETE FROM books WHERE id = ?");
+        return $stmt->execute([$bookId]);
+    }
+
+    /**
+     * Home page data: featured, new arrivals, and distinct categories.
+     * Categories are now pulled from the `books.category` column.
+     */
     public function getHomeData(): array {
-        $featured = Database::get()->query("SELECT * FROM books ORDER BY rating DESC LIMIT 5")->fetchAll();
-        return ["featured" => $featured];
+        $db = Database::get();
+
+        // Featured (top rated)
+        $stmt = $db->query("SELECT * FROM books ORDER BY rating DESC LIMIT 5");
+        $featured = $stmt->fetchAll();
+        foreach ($featured as &$b) {
+            $b = $this->formatBook($b);
+        }
+
+        // New Arrivals
+        $stmt = $db->query("SELECT * FROM books ORDER BY id DESC LIMIT 10");
+        $newArrivals = $stmt->fetchAll();
+        foreach ($newArrivals as &$b) {
+            $b = $this->formatBook($b);
+        }
+
+        // Distinct categories from books table
+        $stmt = $db->query(
+            "SELECT DISTINCT category AS name FROM books
+             WHERE category IS NOT NULL AND category != ''
+             ORDER BY category ASC
+             LIMIT 6"
+        );
+        $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            "featured"     => $featured,
+            "new_arrivals" => $newArrivals,
+            "categories"   => $categories
+        ];
     }
 }
 
 
 ================================================================================
-7. [ORDERS] ORDERS & CART MODULE
+7. [ORDERS] ORDERS & CART MODULE (100% COMPLETE)
 ================================================================================
 
 --------------------------------------------------------------------------------
-File: php_server/src/Orders/OrderController.php
+File: php_server/src/Orders/OrderController.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Orders;
+
 use Core\BaseController;
 use Middleware\Auth;
+use Exception;
+
 class OrderController extends BaseController {
     private OrderService $orderService;
-    public function __construct() { $this->orderService = new OrderService(); }
+
+    public function __construct() {
+        $this->orderService = new OrderService();
+    }
 
     public function viewCart(): void {
         $payload = Auth::requireToken();
-        $this->json($this->orderService->getUserCart((int)$payload['sub']));
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        $cart = $this->orderService->getUserCart($userId);
+        $this->json($cart);
     }
+
     public function addToCart(): void {
         $payload = Auth::requireToken();
-        $this->orderService->addToCart((int)$payload['sub'], $this->getBodyData()['book_id']);
-        $this->json(["message" => "Added"]);
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        $data = $this->getBodyData();
+        
+        if (empty($data['book_id'])) {
+            $this->error("book_id is required", 400);
+        }
+
+        $success = $this->orderService->addToCart($userId, $data['book_id'], $data['quantity'] ?? 1);
+        if (!$success) {
+            $this->error("Failed to add item to cart", 500);
+        }
+
+        $this->json(["message" => "Item added to cart"]);
     }
+
+    public function updateCart(): void {
+        $payload = Auth::requireToken();
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        $data = $this->getBodyData();
+
+        if (!isset($data['book_id']) || !isset($data['quantity'])) {
+            $this->error("book_id and quantity are required", 400);
+        }
+
+        $success = $this->orderService->updateCartItem($userId, $data['book_id'], $data['quantity']);
+        if (!$success) {
+            $this->error("Failed to update cart", 500);
+        }
+
+        $this->json(["message" => "Cart updated successfully"]);
+    }
+
+    public function removeCartItem(int $book_id): void {
+        $payload = Auth::requireToken();
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        
+        $success = $this->orderService->updateCartItem($userId, $book_id, 0); // 0 quantity deletes
+        if (!$success) {
+            $this->error("Failed to remove item", 500);
+        }
+
+        $this->json(["message" => "Item removed from cart"]);
+    }
+
+    public function clearCart(): void {
+        $payload = Auth::requireToken();
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        
+        $success = $this->orderService->clearCart($userId);
+        if (!$success) {
+            $this->error("Failed to clear cart", 500);
+        }
+
+        $this->json(["message" => "Cart cleared successfully"]);
+    }
+
     public function checkout(): void {
         $payload = Auth::requireToken();
-        $res = $this->orderService->checkout((int)$payload['sub'], $this->getBodyData()['shipping_address'], []);
-        $this->json($res);
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        $data = $this->getBodyData();
+
+        if (empty($data['shipping_address'])) {
+            $this->error("shipping_address is required", 400);
+        }
+
+        try {
+            $result = $this->orderService->checkout($userId, $data['shipping_address'], $data['payment'] ?? []);
+            $status = $result['status'] ?? 201;
+            unset($result['status']);
+            $this->json($result, $status);
+        } catch (Exception $e) {
+            $this->error($e->getMessage(), 400);
+        }
     }
+
     public function history(): void {
         $payload = Auth::requireToken();
-        $this->json($this->orderService->getUserOrderHistory((int)$payload['sub']));
+        $userId = (int) ($payload['sub'] ?? $payload['user_id']);
+        $orders = $this->orderService->getUserOrderHistory($userId);
+        $this->json($orders);
+    }
+
+    public function adminGetAll(): void {
+        Auth::requireAdmin();
+        $orders = $this->orderService->getAllOrders();
+        $this->json($orders);
+    }
+
+    public function adminDispatch(int $order_id): void {
+        Auth::requireAdmin();
+        $success = $this->orderService->updateOrderStatus($order_id, 'Shipped');
+        if (!$success) {
+            $this->error("Order not found", 404);
+        }
+        $this->json(["message" => "Order dispatched successfully"]);
     }
 }
 
 --------------------------------------------------------------------------------
-File: php_server/src/Orders/OrderService.php
+File: php_server/src/Orders/OrderService.php (100% COMPLETE)
 --------------------------------------------------------------------------------
 <?php
+
 namespace Orders;
+
 use Core\Database;
+use Exception;
+use PDO;
+
 class OrderService {
-    public function getUserCart(int $userId): array {
-        $stmt = Database::get()->prepare("SELECT items FROM carts WHERE user_id = ?");
+
+    // ============================================================
+    // PRIVATE CART HELPERS
+    // Cart items are stored as JSON in the `carts` table.
+    // Format: [{"book_id": 1, "quantity": 2}, ...]
+    // ============================================================
+
+    /**
+     * Returns raw cart items array for a user (from JSON column).
+     */
+    private function getRawCartItems(int $userId): array {
+        $db = Database::get();
+        $stmt = $db->prepare("SELECT items FROM carts WHERE user_id = ?");
         $stmt->execute([$userId]);
-        $items = json_decode($stmt->fetchColumn() ?: '[]', true);
-        return ["items" => $items];
+        $row = $stmt->fetch();
+        if (!$row || $row['items'] === null) return [];
+        return json_decode($row['items'], true) ?? [];
     }
-    public function addToCart(int $userId, int $bookId): bool {
-        // Logic for updating JSON column in `carts` table
+
+    /**
+     * Persists cart items array back to the JSON column (upsert).
+     */
+    private function saveCartItems(int $userId, array $items): void {
+        $db = Database::get();
+        $json = json_encode(array_values($items)); // re-index array
+        $stmt = $db->prepare("
+            INSERT INTO carts (user_id, items)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE items = VALUES(items), updated_at = NOW()
+        ");
+        $stmt->execute([$userId, $json]);
+    }
+
+    // ============================================================
+    // CART METHODS
+    // ============================================================
+
+    /**
+     * Get the user's cart with full book details joined in.
+     */
+    public function getUserCart(int $userId): array {
+        $db = Database::get();
+        $rawItems = $this->getRawCartItems($userId);
+
+        if (empty($rawItems)) {
+            return ['items' => [], 'total_amount' => '0', 'item_count' => 0];
+        }
+
+        // Fetch book details for all items in one query
+        $bookIds      = array_column($rawItems, 'book_id');
+        $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
+        $stmt         = $db->prepare("SELECT id, title, price, isbn FROM books WHERE id IN ({$placeholders})");
+        $stmt->execute($bookIds);
+
+        $booksById = [];
+        foreach ($stmt->fetchAll() as $book) {
+            $booksById[$book['id']] = $book;
+        }
+
+        $items = [];
+        $total = 0.0;
+
+        foreach ($rawItems as $cartItem) {
+            $book = $booksById[$cartItem['book_id']] ?? null;
+            if (!$book) continue; // skip if book was deleted
+
+            $total += (float) $book['price'] * $cartItem['quantity'];
+            $items[] = [
+                'BookID'   => $cartItem['book_id'],
+                'Title'    => $book['title'],
+                'Price'    => (string) $book['price'],
+                'ISBN'     => $book['isbn'],
+                'Quantity' => $cartItem['quantity'],
+            ];
+        }
+
+        return [
+            'items'        => $items,
+            'total_amount' => (string) $total,
+            'item_count'   => count($items),
+        ];
+    }
+
+    /**
+     * Add a book to cart. Validates stock before adding.
+     */
+    public function addToCart(int $userId, int $bookId, int $quantity): bool {
+        $db = Database::get();
+
+        // Stock validation
+        $stmt = $db->prepare("SELECT stock_quantity, title FROM books WHERE id = ?");
+        $stmt->execute([$bookId]);
+        $book = $stmt->fetch();
+        if (!$book) throw new Exception("Book not found");
+
+        if ($book['stock_quantity'] < $quantity) {
+            throw new Exception("Only {$book['stock_quantity']} units of '{$book['title']}' are available in stock.");
+        }
+
+        $items = $this->getRawCartItems($userId);
+        $found = false;
+
+        foreach ($items as &$item) {
+            if ((int)$item['book_id'] === $bookId) {
+                $newQty = $item['quantity'] + $quantity;
+                if ($book['stock_quantity'] < $newQty) {
+                    throw new Exception("Cannot add more. Total in cart ({$newQty}) exceeds available stock ({$book['stock_quantity']}).");
+                }
+                $item['quantity'] = $newQty;
+                $found = true;
+                break;
+            }
+        }
+        unset($item);
+
+        if (!$found) {
+            $items[] = ['book_id' => $bookId, 'quantity' => $quantity];
+        }
+
+        $this->saveCartItems($userId, $items);
         return true;
     }
-    public function checkout(int $userId, string $address, array $payment): array {
-        // Transactional logic: creates order, decrements stock, clears cart
-        return ["message" => "Order Success"];
+
+    /**
+     * Update quantity of a cart item. quantity=0 removes the item.
+     */
+    public function updateCartItem(int $userId, int $bookId, int $quantity): bool {
+        $db = Database::get();
+
+        $items = $this->getRawCartItems($userId);
+
+        if ($quantity <= 0) {
+            // Remove item
+            $items = array_filter($items, fn($i) => (int)$i['book_id'] !== $bookId);
+        } else {
+            // Stock validation
+            $stmt = $db->prepare("SELECT stock_quantity FROM books WHERE id = ?");
+            $stmt->execute([$bookId]);
+            $stock = $stmt->fetchColumn();
+            if ($stock !== false && $stock < $quantity) {
+                throw new Exception("Requested quantity ($quantity) exceeds available stock ($stock).");
+            }
+
+            $found = false;
+            foreach ($items as &$item) {
+                if ((int)$item['book_id'] === $bookId) {
+                    $item['quantity'] = $quantity;
+                    $found = true;
+                    break;
+                }
+            }
+            unset($item);
+
+            if (!$found) {
+                $items[] = ['book_id' => $bookId, 'quantity' => $quantity];
+            }
+        }
+
+        $this->saveCartItems($userId, $items);
+        return true;
     }
+
+    /**
+     * Empty the user's cart.
+     */
+    public function clearCart(int $userId): bool {
+        $this->saveCartItems($userId, []);
+        return true;
+    }
+
+    // ============================================================
+    // ORDER METHODS
+    // ============================================================
+
+    /**
+     * Checkout: validates stock, creates order with embedded items
+     * and payment info, decrements stock, clears cart.
+     */
+    public function checkout(int $userId, string $shippingAddress, array $paymentInfo): array {
+        $db   = Database::get();
+        $cart = $this->getUserCart($userId);
+
+        if (empty($cart['items'])) {
+            throw new Exception("Cart is empty");
+        }
+
+        $db->beginTransaction();
+        try {
+            $orderItems = [];
+
+            foreach ($cart['items'] as $item) {
+                // Final stock check with row lock
+                $stmt = $db->prepare("SELECT stock_quantity FROM books WHERE id = ? FOR UPDATE");
+                $stmt->execute([$item['BookID']]);
+                $currentStock = $stmt->fetchColumn();
+
+                if ($currentStock < $item['Quantity']) {
+                    throw new Exception("Stock changed for '{$item['Title']}'. Only {$currentStock} available.");
+                }
+
+                // Decrement stock
+                $stmt = $db->prepare("UPDATE books SET stock_quantity = stock_quantity - ? WHERE id = ?");
+                $stmt->execute([$item['Quantity'], $item['BookID']]);
+
+                // Build order items snapshot (title captured at time of order)
+                $orderItems[] = [
+                    'BookID'    => $item['BookID'],
+                    'Title'     => $item['Title'],
+                    'Quantity'  => $item['Quantity'],
+                    'UnitPrice' => $item['Price'],
+                ];
+            }
+
+            $txnId = 'PHP_TXN_' . uniqid();
+
+            // Create order with embedded items + payment
+            $stmt = $db->prepare("
+                INSERT INTO orders
+                    (user_id, total_amount, shipping_address, status, payment_method, payment_status, transaction_id, items)
+                VALUES
+                    (?, ?, ?, 'Pending', ?, 'Success', ?, ?)
+            ");
+            $stmt->execute([
+                $userId,
+                $cart['total_amount'],
+                $shippingAddress,
+                $paymentInfo['method'] ?? 'COD',
+                $txnId,
+                json_encode($orderItems)
+            ]);
+            $orderId = $db->lastInsertId();
+
+            // Clear cart
+            $this->clearCart($userId);
+
+            $db->commit();
+            return [
+                "message"  => "Order placed successfully",
+                "OrderID"  => $orderId,
+                "status"   => 201
+            ];
+        } catch (Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Get order history for a user. Items decoded from JSON.
+     */
     public function getUserOrderHistory(int $userId): array {
-        $stmt = Database::get()->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY order_date DESC");
+        $db   = Database::get();
+        $stmt = $db->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY order_date DESC");
         $stmt->execute([$userId]);
-        return $stmt->fetchAll();
+        $orders = $stmt->fetchAll();
+
+        foreach ($orders as &$order) {
+            $order['OrderID']         = $order['id'];
+            $order['UserID']          = $order['user_id'];
+            $order['TotalAmount']     = (string) $order['total_amount'];
+            $order['ShippingAddress'] = $order['shipping_address'];
+            $order['OrderStatus']     = $order['status'];
+            $order['OrderDate']       = $order['order_date'];
+            $order['PaymentStatus']   = $order['payment_status'];
+            $order['Items']           = json_decode($order['items'] ?? '[]', true) ?? [];
+        }
+
+        return $orders;
+    }
+
+    /**
+     * Get all orders (admin view). Joins with users for email.
+     */
+    public function getAllOrders(): array {
+        $db   = Database::get();
+        $stmt = $db->query("
+            SELECT o.*, u.email AS Email
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            ORDER BY o.order_date DESC
+        ");
+        $orders = $stmt->fetchAll();
+
+        foreach ($orders as &$order) {
+            $order['OrderID']     = $order['id'];
+            $order['UserID']      = $order['user_id'];
+            $order['TotalAmount'] = (string) $order['total_amount'];
+            $order['OrderStatus'] = $order['status'];
+            $order['OrderDate']   = $order['order_date'];
+        }
+
+        return $orders;
+    }
+
+    /**
+     * Update order status (e.g., Pending → Shipped).
+     */
+    public function updateOrderStatus(int $orderId, string $status): bool {
+        $db   = Database::get();
+        $stmt = $db->prepare("UPDATE orders SET status = ? WHERE id = ?");
+        return $stmt->execute([$status, $orderId]);
     }
 }
 
 ================================================================================
-EOF - END OF FILE
+EOF - BOOKHEAVEN SERVER DOCUMENTATION (100% COMPLETE)
 ================================================================================
